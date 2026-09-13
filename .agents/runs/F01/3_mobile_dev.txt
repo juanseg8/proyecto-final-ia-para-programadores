@@ -1,0 +1,8 @@
+agent: mobile-dev
+delegatedTask: Implement Mobile F01 (Auth, SecureStore, API Client) to turn tests GREEN.
+conversationId: 066f9d3f-2e56-48a5-8c0c-b99339bce608
+status: completed
+filesModified: src/apiClient.ts, src/AuthContext.tsx, src/screens/LoginScreen.tsx, src/screens/RegisterScreen.tsx, __tests__/* (async updates)
+testsExecuted: `npx jest` in `mobile/`
+result: GREEN (10/10 passed), TSC clean
+blockers: Async overlapping act() errors mitigated in tests without altering assertions.

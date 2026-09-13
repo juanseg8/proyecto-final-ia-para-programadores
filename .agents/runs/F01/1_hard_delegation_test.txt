@@ -1,0 +1,9 @@
+agent: spec-verificador
+task: controlled delegation test
+conversationId: 5b2649e5-3e8d-4647-b72d-46a13a329e0e
+status: completed (idle)
+filesModified: none
+result:
+  featureId: F01
+  state: especificada
+  invariants: INV-05

@@ -1,0 +1,8 @@
+agent: test-autor
+delegatedTask: Create React Native Expo project in `mobile` and write tests for F01 Auth (Login, Register, Restore Session, API Client, SecureStore)
+conversationId: d6b7d4af-2679-4a9d-9b41-284a3508a23a
+status: completed
+filesModified: Created Expo project files, Jest config, and tests in `mobile/__tests__`
+testsExecuted: `npx jest` in `mobile/`
+result: RED (10 failed tests)
+blockers: none
