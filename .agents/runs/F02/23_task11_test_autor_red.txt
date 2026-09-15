@@ -1,0 +1,12 @@
+agent: test-autor
+task: Task 11 (RED) - Mobile: detalle, edición y eliminación
+conversationId: f80f794e-0d1d-4c03-bcac-c4112545c052
+status: completed (RED)
+filesModified:
+  - mobile/__tests__/EstablishmentDetailScreen.test.tsx
+actionsTaken:
+  - Asserted fetching and rendering of an establishment by id.
+  - Asserted route interception and fallback upon permission rejection (error).
+  - Configured test cases for the Delete button with a mock confirmation prompt calling apiClient.delete.
+  - Navigated to the Edit form asserting routing params.
+  - Verified suite defaults to FAIL since EstablishmentDetailScreen is still the task-7 dummy.

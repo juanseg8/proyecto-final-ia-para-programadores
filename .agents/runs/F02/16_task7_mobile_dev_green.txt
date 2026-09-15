@@ -1,0 +1,16 @@
+agent: mobile-dev
+task: Task 7 (GREEN) - Mobile: Navegación y listado
+conversationId: 18054a54-d598-490d-9b41-8939631d0f96
+status: completed (GREEN)
+filesModified:
+  - mobile/src/screens/HomeScreen.tsx
+  - mobile/src/screens/EstablishmentListScreen.tsx
+  - mobile/src/screens/EstablishmentFormScreen.tsx (dummy)
+  - mobile/src/screens/EstablishmentDetailScreen.tsx (dummy)
+  - mobile/App.tsx
+actionsTaken:
+  - Configured React Navigation Native stack.
+  - Implemented EstablishmentListScreen fetching from apiClient.get('/establishments').
+  - Handled loading and empty states properly.
+  - Wired up "Mis establecimientos" and "Nuevo establecimiento" buttons.
+  - Tests now passing (15/15).

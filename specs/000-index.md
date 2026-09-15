@@ -3,7 +3,7 @@
 | ID | Feature | Estado | Invariantes que toca |
 |----|---------|--------|----------------------|
 | F01 | Autenticación y control de acceso | **implementada** | INV-05 |
-| F02 | Establecimiento y ubicación | pendiente | INV-04, INV-05 |
+| F02 | Establecimiento y ubicación | **implementada** | INV-04, INV-05 |
 | F03 | Rodeos, animales, pesajes y eventos | pendiente | INV-05 |
 | F04 | Motor de indicadores | pendiente | INV-01, INV-09 |
 | F05 | Benchmark anónimo | **especificada** | INV-02, INV-03, INV-04, INV-05, INV-09 |

@@ -1,0 +1,12 @@
+agent: backend-dev
+task: Task 3 (GREEN) - Detalle + INV-05
+conversationId: 98ec174f-f0b6-4bef-b7e1-b51b7e19dc04
+status: completed (GREEN)
+filesModified:
+  - backend/src/establishments/guards/establishment-ownership.guard.ts
+  - backend/src/establishments/establishment.controller.ts
+  - backend/src/establishments/establishment.service.ts
+actionsTaken:
+  - Implemented EstablishmentOwnershipGuard to strictly check id & userId ownership, throwing 404 for alien/missing (INV-05).
+  - Applied Guard to GET /:id route.
+  - Tests now passing (13/13).

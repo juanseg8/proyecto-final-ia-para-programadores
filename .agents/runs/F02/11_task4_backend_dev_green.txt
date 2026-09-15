@@ -1,0 +1,13 @@
+agent: backend-dev
+task: Task 4 (GREEN) - Edición + INV-05
+conversationId: 6c0a3431-005d-4503-b529-915b8db94864
+status: completed (GREEN)
+filesModified:
+  - backend/src/establishments/dto/update-establishment.dto.ts
+  - backend/src/establishments/establishment.controller.ts
+  - backend/src/establishments/establishment.service.ts
+actionsTaken:
+  - Implemented UpdateEstablishmentDto manually to avoid Jest ESM issues with mapped-types.
+  - Wired up EstablishmentOwnershipGuard for PUT /:id to satisfy INV-05.
+  - Handled 23505 constraints on name update to map to 409 Conflict.
+  - Tests now passing (18/18).

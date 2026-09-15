@@ -1,0 +1,14 @@
+agent: mobile-dev
+task: Task 11 (GREEN) - Mobile: detalle, edición y eliminación
+conversationId: a26e8a9c-5d84-44a6-9355-99f32f9a2e63
+status: completed (GREEN)
+filesModified:
+  - mobile/src/screens/EstablishmentDetailScreen.tsx
+  - mobile/src/screens/EstablishmentFormScreen.tsx
+actionsTaken:
+  - Implemented EstablishmentDetailScreen fetching from /establishments/:id.
+  - Correctly wired INV-05 fallback (Error alert + goBack).
+  - Wired navigation to Edit mode (passing id params).
+  - Wired Delete button with Alert.alert confirmation.
+  - Refactored EstablishmentFormScreen to act as dual Create/Edit depending on presence of route params.
+  - Orchestrator verified execution of FULL suite (npx jest) passing flawlessly (10 suites, 30 tests).

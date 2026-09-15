@@ -1,0 +1,12 @@
+agent: backend-dev
+task: Task 5 (GREEN) - Eliminación física + INV-05
+conversationId: 493b0720-3be8-4c6d-b08f-7cb522b4278b
+status: completed (GREEN)
+filesModified:
+  - backend/src/establishments/establishment.controller.ts
+  - backend/src/establishments/establishment.service.ts
+actionsTaken:
+  - Added @Delete(':id') endpoint.
+  - Protected with EstablishmentOwnershipGuard.
+  - Implemented physical deletion via repository.delete(id).
+  - Tests now passing (21/21).

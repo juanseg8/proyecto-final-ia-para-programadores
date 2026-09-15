@@ -1,0 +1,10 @@
+agent: test-autor
+task: Task 2 (RED) - Crear y listar establecimientos
+conversationId: f5ea88ee-19e5-4c28-8d42-c2d3fde5e68a
+status: completed (RED)
+filesModified:
+  - backend/test/establishment.e2e-spec.ts
+actionsTaken:
+  - Created robust E2E test scenarios for POST /establishments and GET /establishments.
+  - Asserted all 400 validations, 409 conflict constraints, and INV-05 isolation logic.
+  - Output shows 404 since routes don't exist yet (RED).

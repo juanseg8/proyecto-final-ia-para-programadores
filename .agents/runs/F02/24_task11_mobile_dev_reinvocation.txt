@@ -1,0 +1,8 @@
+agent: sdd-orquestador
+task: Task 11 (GREEN) - Mobile: detalle, edición y eliminación (Reanudación)
+conversationId: a26e8a9c-5d84-44a6-9355-99f32f9a2e63
+status: in-progress
+actionsTaken:
+  - Reanudación del flujo tras límite de cuota agotada.
+  - Se invocó a mobile-dev con directivas estrictas de NO tocar archivos de tests de test-autor.
+  - Se impuso requerimiento de ejecutar la suite entera (`npx jest`) para certificar el GREEN state.

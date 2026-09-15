@@ -1,0 +1,12 @@
+agent: mobile-dev
+task: Ciclo de Reparación - Fase Mobile (Contrato Canónico)
+conversationId: 201d5e93-1c95-4880-9826-61e5ef2bf7a4
+status: completed (GREEN)
+filesModified:
+  - mobile/src/screens/EstablishmentFormScreen.tsx
+  - mobile/src/screens/EstablishmentDetailScreen.tsx
+actionsTaken:
+  - Wired payload to EXACT canonical fields: province, locality, superficieHa.
+  - Successfully casted superficieHa to Number, avoiding NaN.
+  - Corrected Axios catch clauses to respond to 404 (INV-05) instead of 403.
+  - Suite execution passes 30/30 tests clean.

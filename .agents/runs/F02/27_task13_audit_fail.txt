@@ -1,0 +1,7 @@
+agent: sdd-orquestador
+task: Task 13 - Auditoría Inicial F02 (Fallida)
+status: completed (FAIL)
+actionsTaken:
+  - spec-verificador detectó un mismatch crítico en el contrato HTTP entre Backend y Mobile (provincia vs province, locality omitido en backend, surface string en mobile vs superficieHa number en backend).
+  - revisor-seguridad otorgó PASS a INV-05.
+  - Se detuvo la línea de ensamblaje por orden del usuario para iniciar Ciclo de Reparación Oficial.

@@ -1,0 +1,11 @@
+agent: test-autor
+task: Task 7 (RED) - Mobile: Navegación y listado
+conversationId: a6ce4c79-312a-43d1-be08-df55821256e8
+status: completed (RED)
+filesModified:
+  - mobile/__tests__/HomeScreen.test.tsx
+  - mobile/__tests__/EstablishmentListScreen.test.tsx
+actionsTaken:
+  - Added assertions in HomeScreen to navigate to Mis establecimientos.
+  - Implemented EstablishmentListScreen tests covering empty state, rendering list via mocked apiClient, and navigation buttons.
+  - Confirmed RED state via RTL query failures (Unable to find element with text...).

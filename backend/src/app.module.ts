@@ -3,9 +3,11 @@ dotenv.config();
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
+import { EstablishmentModule } from './establishments/establishment.module';
 import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { Establishment } from './entities/establishment.entity';
 
 @Module({
   imports: [
@@ -16,10 +18,11 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
       username: process.env.DB_USER || 'agro_user',
       password: process.env.DB_PASSWORD || 'agro_pass',
       database: process.env.DB_NAME || 'agro_db',
-      entities: [User, Session, PasswordResetToken],
+      entities: [User, Session, PasswordResetToken, Establishment],
       synchronize: false,
     }),
     AuthModule,
+    EstablishmentModule,
   ],
 })
 export class AppModule {}

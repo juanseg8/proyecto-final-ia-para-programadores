@@ -1,0 +1,16 @@
+agent: backend-dev
+task: Task 2 (GREEN) - Crear y listar establecimientos
+conversationId: 3e9e5de2-c6d9-4fc6-a661-ecfcfe27f3c6
+status: completed (GREEN)
+filesModified:
+  - backend/src/establishments/establishment.module.ts
+  - backend/src/establishments/establishment.controller.ts
+  - backend/src/establishments/establishment.service.ts
+  - backend/src/establishments/dto/create-establishment.dto.ts
+actionsTaken:
+  - Implemented POST and GET endpoints.
+  - Added strict class-validator rules (Min, Max, IsPositive) and relied on whitelist.
+  - Mapped constraint error 23505 to 409 Conflict.
+  - Extracted userId strictly from req.user (JWT).
+  - Normalization: lowercased, unaccented, trimmed spaces.
+  - Tests now passing (9/9).

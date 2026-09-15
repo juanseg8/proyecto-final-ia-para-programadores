@@ -1,0 +1,11 @@
+agent: test-autor
+task: Task 8 (RED) - Mobile: formulario básico
+conversationId: de29b534-c0da-4fa0-872d-24b0ec4512ca
+status: completed (RED)
+filesModified:
+  - mobile/__tests__/EstablishmentFormScreen.test.tsx
+actionsTaken:
+  - Wrote 4 test cases for the basic form inputs (name, province, locality, surface).
+  - Ensured the payload is verified strictly as clean (no userId etc.).
+  - Added test cases expecting natural language error displays upon 400 and 409 API failures.
+  - Test suite returns 4 FAILs due to the dummy component currently rendering.

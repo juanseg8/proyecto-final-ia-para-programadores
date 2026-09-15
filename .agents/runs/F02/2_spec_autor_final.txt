@@ -1,0 +1,12 @@
+agent: spec-autor
+delegatedTask: Finalize specification for F02 - Establecimiento y ubicación.
+conversationId: 2e114429-ad7c-4b5e-827d-67eae8741cc8
+status: completed
+filesModified: specs/features/F02-Establecimiento.md
+actionsTaken:
+  - Added visual map selection and optional GPS for location.
+  - Required total surface area > 0.
+  - Excluded manual lat/lng entry.
+  - Refined unique constraint per user for normalized name (UNIQUE(userId, normalizedName)).
+  - Ensured DTO validation fails (400 Bad Request) if userId is injected.
+  - Added BDD scenarios covering edge cases like GPS permission denial and duplicate names.

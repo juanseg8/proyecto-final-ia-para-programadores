@@ -1,0 +1,7 @@
+agent: sdd-orquestador
+task: Ciclo de Reparación - Auditoría Final F02 (Rebote)
+status: in-progress
+actionsTaken:
+  - revisor-seguridad dio PASS (INV-05 intacto).
+  - spec-verificador detectó un FAIL en Frontend: mobile-dev corrigió POST/PUT hacia superficieHa, pero los GET de lectura en EstablishmentFormScreen y EstablishmentDetailScreen aún intentan leer "surface", resultando en renderizado vacío.
+  - Se detiene el proceso final. Se retorna a test-autor para corregir el payload mockeado del GET, y luego se retornará a mobile-dev.

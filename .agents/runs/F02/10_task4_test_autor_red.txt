@@ -1,0 +1,9 @@
+agent: test-autor
+task: Task 4 (RED) - Edición + INV-05
+conversationId: a3d40ffb-d88a-4492-bbff-2e7e6de2547b
+status: completed (RED)
+filesModified:
+  - backend/test/establishment.e2e-spec.ts
+actionsTaken:
+  - Wrote scenarios for PUT /:id testing valid edit, name conflict (409), restricted field injection (400), out of range (400), and INV-05 logic (404 for alien/missing).
+  - Confirmed RED state (all expect specific statuses, got 404).

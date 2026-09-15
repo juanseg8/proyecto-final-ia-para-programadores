@@ -1,0 +1,12 @@
+agent: test-autor
+task: Task 10 (RED) - Mobile: GPS y permisos
+conversationId: 6789bcd2-7088-4089-b341-6a502aed460b
+status: completed (RED)
+filesModified:
+  - mobile/__tests__/MapLocationPicker.test.tsx
+actionsTaken:
+  - Mocked expo-location module.
+  - Added test case for granted permission & valid location acquisition.
+  - Added test case for denied permission (asserts UI doesn't break, fallback available).
+  - Added test case for GPS failure (asserts UI doesn't break, fallback available).
+  - Assertions fail natively (Expected button not found) marking proper RED state.

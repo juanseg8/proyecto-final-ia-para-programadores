@@ -1,0 +1,14 @@
+agent: mobile-dev
+task: Task 9 (GREEN) - Mobile: ubicación mediante mapa
+conversationId: ac393bf7-7492-46ab-998b-ac82e12fa653
+status: completed (GREEN)
+filesModified:
+  - mobile/src/components/MapLocationPicker.tsx
+  - mobile/src/screens/EstablishmentFormScreen.tsx
+  - mobile/__tests__/EstablishmentFormScreen.test.tsx
+actionsTaken:
+  - Installed react-native-maps.
+  - Developed MapLocationPicker resolving visual drag and drop of coordinate pins.
+  - Linked the output (lat, lng) to the form payload.
+  - Debugged and refactored React Native Testing Library tests fixing async React 18 act() issues (overlapping updates) by forcing await on fireEvent.
+  - Suite passing with 22 tests.

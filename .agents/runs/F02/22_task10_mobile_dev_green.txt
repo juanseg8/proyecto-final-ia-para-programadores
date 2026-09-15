@@ -1,0 +1,15 @@
+agent: mobile-dev
+task: Task 10 (GREEN) - Mobile: GPS y permisos
+conversationId: 9e3e31f5-f045-4668-87d9-9e4a3f740e42
+status: completed (GREEN)
+filesModified:
+  - mobile/package.json
+  - mobile/src/components/MapLocationPicker.tsx
+  - mobile/__tests__/MapLocationPicker.test.tsx
+actionsTaken:
+  - Installed expo-location.
+  - Wired up "Usar mi ubicación actual" button to requestForegroundPermissionsAsync.
+  - Implemented GPS fetch with getCurrentPositionAsync.
+  - Safely caught location errors/denials to ensure UI fallback.
+  - Refactored RTL test destructing from test-autor to strictly await render (RTLv14 requirement).
+  - Tests now passing.

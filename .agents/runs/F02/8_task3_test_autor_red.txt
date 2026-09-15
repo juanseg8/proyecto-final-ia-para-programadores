@@ -1,0 +1,10 @@
+agent: test-autor
+task: Task 3 (RED) - Detalle + INV-05
+conversationId: 0944fc02-f644-4616-8dbf-e07c257cf75e
+status: completed (RED)
+filesModified:
+  - backend/test/establishment.e2e-spec.ts
+actionsTaken:
+  - Created E2E test block for GET /establishments/:id.
+  - Wrote scenarios for 200 (own), 401 (no token), 404 (alien), and 404 (missing).
+  - Output shows expected RED state since endpoint returns 404 by default for missing routes.

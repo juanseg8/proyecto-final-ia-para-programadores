@@ -1,0 +1,9 @@
+agent: spec-autor
+delegatedTask: Create draft specification for F02 - Establecimiento y ubicación.
+conversationId: 2e114429-ad7c-4b5e-827d-67eae8741cc8
+status: draft submitted, awaiting user answers
+filesModified: specs/features/F02-Establecimiento.md
+questionsAsked:
+  1. Ubicación (Lat/Lng): GPS, Mapa interactivo o manual?
+  2. Superficie: Es obligatoria/necesaria ahora?
+  3. Nombres duplicados: Se permiten nombres iguales para un mismo usuario?

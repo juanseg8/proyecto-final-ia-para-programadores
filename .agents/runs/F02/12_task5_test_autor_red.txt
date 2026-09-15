@@ -1,0 +1,12 @@
+agent: test-autor
+task: Task 5 (RED) - Eliminación física + INV-05
+conversationId: b8934060-aa75-47b2-8467-dc4ab0768160
+status: completed (RED)
+filesModified:
+  - backend/test/establishment.e2e-spec.ts
+actionsTaken:
+  - Wrote E2E tests for DELETE /establishments/:id
+  - Covered physical deletion (ensuring GET returns 404 afterwards).
+  - Covered missing resources (404).
+  - Covered alien resources (INV-05 -> 404).
+  - Test run outputs expected RED state (Expected 200 or 204, got 404).

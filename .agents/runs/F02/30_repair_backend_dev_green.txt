@@ -1,0 +1,13 @@
+agent: backend-dev
+task: Ciclo de Reparación - Fase Backend (Contrato Canónico)
+conversationId: 0057dea0-a7ed-4bf8-b95d-9d3c119a0e9f
+status: completed (GREEN)
+filesModified:
+  - backend/src/entities/establishment.entity.ts
+  - backend/src/establishments/establishment.controller.ts
+  - backend/src/establishments/dto/create-establishment.dto.ts
+  - backend/src/establishments/dto/update-establishment.dto.ts
+actionsTaken:
+  - Removed TypeORM @AfterLoad hacks and "provincia" mapping entirely.
+  - Made the DTOs and Controller return the exact Canonical Contract fields (province, locality, superficieHa).
+  - Executed backend tests ensuring they pass gracefully without aliases.

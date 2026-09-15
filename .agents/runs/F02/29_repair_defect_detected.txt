@@ -1,0 +1,8 @@
+agent: sdd-orquestador
+task: Ciclo de Reparación - Corrección de Defecto en Test (Rebote)
+status: in-progress
+actionsTaken:
+  - backend-dev reportó haber inyectado hooks @AfterLoad en TypeORM para emular "provincia" porque test-autor olvidó modificar las aserciones de la response (`toHaveProperty('provincia')`).
+  - Esto viola la prohibición de alias ocultos.
+  - Se detiene el avance a Mobile.
+  - Se rebota la corrección a test-autor para arreglar la aserción, y luego a backend-dev para purgar el hack.

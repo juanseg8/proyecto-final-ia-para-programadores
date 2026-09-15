@@ -1,0 +1,14 @@
+agent: test-autor
+task: Ciclo de Reparación - Fase RED (Contrato Canónico)
+conversationId: 581e8b31-449f-4bae-a3c9-414777fe1980
+status: completed (RED)
+filesModified:
+  - backend/test/establishment.e2e-spec.ts
+  - mobile/__tests__/EstablishmentFormScreen.test.tsx
+  - mobile/__tests__/EstablishmentDetailScreen.test.tsx
+actionsTaken:
+  - Forced canonical contract in E2E tests: name, province, locality, latitude, longitude, superficieHa.
+  - Asserted that missing locality, or sending 'provincia', or string superficieHa -> 400 Bad Request.
+  - Asserted mobile mock payload strictly uses province, locality, and a numerical superficieHa.
+  - Repaired Mobile INV-05 assertions to expect 404 instead of 403.
+  - Confirmed RED in both stacks.

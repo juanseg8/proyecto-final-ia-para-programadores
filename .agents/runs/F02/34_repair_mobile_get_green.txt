@@ -1,0 +1,10 @@
+agent: mobile-dev
+task: Ciclo de Reparación - Lectura GET (Mobile)
+conversationId: 8c7c06f9-87f2-432d-b10e-bc8fa632222f
+status: completed (GREEN)
+filesModified:
+  - mobile/src/screens/EstablishmentFormScreen.tsx
+  - mobile/src/screens/EstablishmentDetailScreen.tsx
+actionsTaken:
+  - Component reads are now strictly synced to "superficieHa" instead of "surface" upon API GET.
+  - Assertions by test-autor passed successfully.
