@@ -16,6 +16,7 @@ permission:
     "AGENTS.md": allow
     "OVERNIGHT-MVP.md": allow
     "MVP-EXECUTION-PLAN.md": allow
+    "PROJECT-MAP.md": allow
     "night-tasks/**": allow
     "specs/constitution.md": allow
     "specs/000-index.md": allow
@@ -50,3 +51,12 @@ Additional execution discipline:
 - A failed Read because a guessed file does not exist is a planning error: immediately return to the exact task paths; do not search the repository for substitutes.
 - TypeScript being green before edits does NOT mean the task is complete.
 - For tasks marked as implementation work, make the required production changes. If after inspecting the exact files the requirement is already fully implemented, write an explicit NO_CHANGE_NEEDED reason in NIGHT_REPORT.md instead of silently stopping.
+
+
+PROJECT-MAP discipline:
+- Read PROJECT-MAP.md at the start of every task.
+- Exact paths in the task and PROJECT-MAP are authoritative.
+- Never invent a path.
+- Never call Read on a directory such as mobile, mobile/src, backend, backend/src, specs or night-tasks.
+- If an exact listed file does not exist and the task says "crear", create it at that exact path.
+- If an exact listed file unexpectedly does not exist and it is not a create target, record BLOCKED_PATH_MISSING in NIGHT_REPORT.md and stop that task; do not search the repo.

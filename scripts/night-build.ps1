@@ -152,7 +152,7 @@ foreach($task in $tasks){
   $before=(git rev-parse HEAD).Trim()
   $taskText=Get-Content $task.File -Raw
   $prompt=@"
-Read AGENTS.md, OVERNIGHT-MVP.md, MVP-EXECUTION-PLAN.md and the relevant feature spec.
+Read AGENTS.md, OVERNIGHT-MVP.md, MVP-EXECUTION-PLAN.md, PROJECT-MAP.md and the relevant feature spec.
 Execute exactly this task:
 
 $taskText
