@@ -75,7 +75,7 @@ Write-Host "Scope: mobile/ only"
 Write-Host ""
 
 Write-Host "== Deterministic text/encoding cleanup ==" -ForegroundColor Cyan
-& powershell -ExecutionPolicy Bypass -File scripts/fix-mobile-text.ps1
+& node scripts/fix-mobile-text.mjs
 if ($LASTEXITCODE -ne 0) { throw "Text normalization failed." }
 
 $cleanupPaths = @(git status --porcelain | ForEach-Object { if ($_.Length -ge 4) { $_.Substring(3).Trim() } })
