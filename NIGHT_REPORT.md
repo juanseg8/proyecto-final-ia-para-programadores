@@ -5,7 +5,8 @@ Branch: night-build-mvp
 Model: ollama/agro-coder Devstral Small 2 24B
 Push: NO
 
-02 F02 navigation: PENDING
+02 F02 navigation: VERIFIED_EXISTING
+NO_CHANGE_NEEDED: 02 - EstablishmentList y EstablishmentDetail ya refrescan con useFocusEffect; Create/Update vuelven con goBack y Delete vuelve al listado, que refetchea al recuperar focus. No hay header técnico visible porque los stacks usan headerShown:false.
 03 GeoRef: PENDING
 04 UI foundation: PENDING - HUMAN_SCREENSHOT_REQUIRED
 05 Map: PENDING - REAL_DEVICE_REQUIRED
