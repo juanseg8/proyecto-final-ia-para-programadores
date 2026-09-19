@@ -1,6 +1,7 @@
 param(
   [ValidateSet("02","03","04","05")]
-  [string]$StartFrom = "02"
+  [string]$StartFrom = "02",
+  [int]$MaxRepairAttempts = 3
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,7 +27,6 @@ function Get-ChangedPaths([string]$beforeSha) {
   $paths = @()
   $committed = git diff --name-only "$beforeSha..HEAD"
   if ($committed) { $paths += $committed }
-
   $status = git status --porcelain
   foreach ($line in $status) {
     if ($line.Length -lt 4) { continue }
@@ -44,7 +44,6 @@ function Assert-AllowedPaths([string[]]$paths) {
     $allowed = $normalized.StartsWith("mobile/") -or $normalized -eq "NIGHT_REPORT.md"
     if (-not $allowed) { $forbidden += $normalized }
   }
-
   if ($forbidden.Count -gt 0) {
     Write-Host "FORBIDDEN PATH CHANGES DETECTED:" -ForegroundColor Red
     $forbidden | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
@@ -52,38 +51,97 @@ function Assert-AllowedPaths([string[]]$paths) {
   }
 }
 
-function Run-MobileGate([string[]]$testFiles) {
+function Invoke-MobileGate([string[]]$testFiles, [bool]$fullSuite) {
   Push-Location mobile
   try {
+    $allOutput = @()
     Write-Host "Running TypeScript gate..."
-    npx tsc --noEmit
-    if ($LASTEXITCODE -ne 0) { throw "TypeScript gate failed." }
+    $ts = @(& npx tsc --noEmit 2>&1)
+    $tsCode = $LASTEXITCODE
+    $ts | ForEach-Object { Write-Host $_ }
+    $allOutput += $ts
+    if ($tsCode -ne 0) {
+      return @{ Success = $false; Stage = "typescript"; Output = ($allOutput -join [Environment]::NewLine) }
+    }
 
-    Write-Host "Running focused Jest gate..."
-    npx jest --runInBand --runTestsByPath @testFiles
-    if ($LASTEXITCODE -ne 0) { throw "Focused Jest gate failed." }
-  }
-  finally {
+    Write-Host "Running Jest gate..."
+    if ($fullSuite) {
+      $jest = @(& npx jest --runInBand 2>&1)
+    } else {
+      $jest = @(& npx jest --runInBand --runTestsByPath @testFiles 2>&1)
+    }
+    $jestCode = $LASTEXITCODE
+    $jest | ForEach-Object { Write-Host $_ }
+    $allOutput += $jest
+    return @{ Success = ($jestCode -eq 0); Stage = "jest"; Output = ($allOutput -join [Environment]::NewLine) }
+  } finally {
     Pop-Location
   }
 }
 
-Write-Host "== Agro Intelligence NIGHT BUILD V5 =="
+function Run-GateWithAutoRepair([string]$label, [string[]]$testFiles, [string]$baselineSha, [bool]$fullSuite = $false) {
+  for ($attempt = 0; $attempt -le $MaxRepairAttempts; $attempt++) {
+    $gate = Invoke-MobileGate $testFiles $fullSuite
+    if ($gate.Success) {
+      Write-Host "GREEN: $label" -ForegroundColor Green
+      return
+    }
+
+    if ($attempt -eq $MaxRepairAttempts) {
+      throw "$label is still failing after $MaxRepairAttempts repair attempts."
+    }
+
+    Assert-AllowedPaths @(Get-ChangedPaths $baselineSha)
+
+    $failure = [string]$gate.Output
+    if ($failure.Length -gt 12000) {
+      $failure = $failure.Substring($failure.Length - 12000)
+    }
+
+    $scope = if ($fullSuite) { "full mobile test suite" } else { $testFiles -join ", " }
+    Write-Host "AUTO-REPAIR $($attempt + 1)/$MaxRepairAttempts for $label" -ForegroundColor Yellow
+
+    $repairPrompt = @"
+A validation gate failed.
+
+Label: $label
+Stage: $($gate.Stage)
+Tests: $scope
+
+Failure log:
+$failure
+
+Repair this autonomously.
+- Work only under mobile/ and NIGHT_REPORT.md.
+- Fix product code when product code is wrong.
+- Fix the test when the test is invalid/incompatible.
+- Preserve meaningful assertions and behavior.
+- Do not skip or delete tests just to get green.
+- Do not commit or push.
+- Make the smallest credible repair, then stop.
+"@
+
+    & opencode run --agent test-repairer --model ollama/agro-coder --auto --title "Repair $label" $repairPrompt
+    if ($LASTEXITCODE -ne 0) { throw "Repair agent failed for $label." }
+    Assert-AllowedPaths @(Get-ChangedPaths $baselineSha)
+  }
+}
+
+Write-Host "== Agro Intelligence NIGHT BUILD V6 =="
 Write-Host "Branch: $branch"
 Write-Host "Model: ollama/agro-coder"
-Write-Host "Scope: mobile/ only"
+Write-Host "Automatic repair attempts per gate: $MaxRepairAttempts"
 Write-Host ""
 
 Write-Host "== Deterministic text/encoding cleanup ==" -ForegroundColor Cyan
+$cleanupBefore = (git rev-parse HEAD).Trim()
 & node scripts/fix-mobile-text.mjs
 if ($LASTEXITCODE -ne 0) { throw "Text normalization failed." }
+Assert-AllowedPaths @(Get-ChangedPaths $cleanupBefore)
 
-$cleanupPaths = @(git status --porcelain | ForEach-Object { if ($_.Length -ge 4) { $_.Substring(3).Trim() } })
-Assert-AllowedPaths $cleanupPaths
+Run-GateWithAutoRepair "encoding cleanup" @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/RegisterScreen.test.tsx") $cleanupBefore $false
 
-Run-MobileGate @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/RegisterScreen.test.tsx")
-
-git add mobile
+git add mobile NIGHT_REPORT.md
 $cleanupStaged = git diff --cached --name-only
 if ($cleanupStaged) {
   git commit -m "night: normalize mobile text encoding"
@@ -100,7 +158,6 @@ $tasks = $tasks[$startIndex..($tasks.Count - 1)]
 foreach ($task in $tasks) {
   Write-Host ""
   Write-Host "== Task $($task.Id): $($task.File) ==" -ForegroundColor Cyan
-
   $before = (git rev-parse HEAD).Trim()
   $taskPrompt = Get-Content $task.File -Raw
 
@@ -120,13 +177,10 @@ IMPORTANT:
 "@
 
   & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro Night Task $($task.Id)" $prompt
-  if ($LASTEXITCODE -ne 0) {
-    throw "OpenCode failed during task $($task.Id)."
-  }
+  if ($LASTEXITCODE -ne 0) { throw "OpenCode failed during task $($task.Id)." }
 
-  $paths = @(Get-ChangedPaths $before)
-  Assert-AllowedPaths $paths
-  Run-MobileGate $task.Tests
+  Assert-AllowedPaths @(Get-ChangedPaths $before)
+  Run-GateWithAutoRepair "Task $($task.Id)" $task.Tests $before $false
 
   git add mobile NIGHT_REPORT.md
   $staged = git diff --cached --name-only
@@ -139,19 +193,17 @@ IMPORTANT:
 }
 
 Write-Host ""
-Write-Host "== Final full mobile gate ==" -ForegroundColor Cyan
-Push-Location mobile
-try {
-  npx tsc --noEmit
-  if ($LASTEXITCODE -ne 0) { throw "Final TypeScript gate failed." }
+Write-Host "== Final full mobile gate with auto-repair ==" -ForegroundColor Cyan
+$finalBefore = (git rev-parse HEAD).Trim()
+Run-GateWithAutoRepair "final full mobile suite" @() $finalBefore $true
 
-  npx jest --runInBand
-  if ($LASTEXITCODE -ne 0) { throw "Final Jest gate failed." }
-}
-finally {
-  Pop-Location
+git add mobile NIGHT_REPORT.md
+$finalStaged = git diff --cached --name-only
+if ($finalStaged) {
+  git commit -m "night: repair final mobile gate"
+  if ($LASTEXITCODE -ne 0) { throw "Final repair commit failed." }
 }
 
 Write-Host ""
-Write-Host "NIGHT BUILD V5 finished." -ForegroundColor Green
+Write-Host "NIGHT BUILD V6 finished GREEN." -ForegroundColor Green
 Write-Host "No push was performed."
