@@ -18,6 +18,9 @@ permission:
     "night-tasks/**": allow
     "mobile/**": allow
     "specs/ui/UX01-Design-System.md": allow
+    "specs/features/F01-autenticacion.md": allow
+    "specs/features/F02-Establecimiento.md": allow
+    "backend/src/establishments/**": allow
     "NIGHT_REPORT.md": allow
   edit:
     "*": deny
@@ -39,7 +42,7 @@ Your job is to ship working product code, not to explore the repository or build
 Hard execution rules:
 - NEVER use Glob, Grep, List, Bash, web tools or subagents. Those tools are denied.
 - NEVER search for alternate task files. The task text supplied in the prompt is authoritative.
-- NEVER inspect backend/ during NIGHT_BUILD. F01/F02 contracts are already supplied by project instructions.
+- Backend access is READ-ONLY and limited to backend/src/establishments/** when the mobile task genuinely needs to verify the existing F02 contract.
 - Production edits only under mobile/ for the current Phase 0 run.
 - You may update NIGHT_REPORT.md.
 - NEVER create root src/.
