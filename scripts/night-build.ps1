@@ -105,7 +105,7 @@ function Repair-Compile([string]$label, [string]$baselineSha) {
       $compilerOutput = $compilerOutput.Substring($compilerOutput.Length - 10000)
     }
 
-    Write-Host "Compile repair $($attempt + 1)/$MaxCompileRepairAttempts: $label" -ForegroundColor Yellow
+    Write-Host "Compile repair $($attempt + 1)/${MaxCompileRepairAttempts}: $label" -ForegroundColor Yellow
 
     $repairPrompt = @"
 The current Night Build task does not compile.
