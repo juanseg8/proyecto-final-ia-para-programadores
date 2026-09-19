@@ -60,13 +60,15 @@
         "webfetch": "deny",
         "websearch": "deny",
         "external_directory": "deny",
-        "question": "deny"
+        "question": "deny",
+        "rewrite_file": "allow"
       },
       "prompt": "{file:./.opencode/prompts/build.txt}",
       "tools": {
         "read": true,
-        "write": true,
+        "write": false,
         "edit": false,
+        "rewrite_file": true,
         "glob": true,
         "grep": true,
         "list": true,

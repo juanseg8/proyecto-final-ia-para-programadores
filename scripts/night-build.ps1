@@ -11,44 +11,46 @@ if (-not $branch) { throw "Not inside a git repository." }
 if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-refactor") { throw "Use dedicated night-build branch." }
 if (git status --porcelain) { throw "Working tree is not clean." }
 
-Write-Host "NIGHT BUILD write probes..." -ForegroundColor Cyan
+Write-Host "NIGHT BUILD mutation probe..." -ForegroundColor Cyan
 
-# Probe 1: create a new file through OpenCode write.
-$probeFile = "night-agent-write-probe.txt"
-if (Test-Path $probeFile) { Remove-Item $probeFile -Force }
-$probePrompt = @"
-Create exactly one file at repository root named night-agent-write-probe.txt with exactly:
-WRITE_OK
-Use the write tool. Do not read or modify any other file. Stop immediately after creating it.
-"@
-& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build create probe" $probePrompt
-if ($LASTEXITCODE -ne 0) { throw "OpenCode create probe process failed." }
-if (-not (Test-Path $probeFile)) { throw "OpenCode did not create the write probe." }
-if ((Get-Content $probeFile -Raw).Trim() -ne "WRITE_OK") { throw "Create probe content is invalid." }
-Remove-Item $probeFile -Force
-
-# Probe 2: overwrite an EXISTING file through OpenCode write.
+# Verify the exact mutation mechanism used by production tasks.
 $rewriteProbe = "night-agent-rewrite-probe.txt"
 Set-Content -Path $rewriteProbe -Value "REWRITE_BEFORE" -NoNewline
+
 $rewritePrompt = @"
-Read night-agent-rewrite-probe.txt, then replace the COMPLETE file using the write tool so its exact content becomes:
-REWRITE_OK
-The edit tool is disabled. Do not touch any other file. Stop after the write.
+Read night-agent-rewrite-probe.txt.
+Then call the custom rewrite_file tool exactly once with:
+path = night-agent-rewrite-probe.txt
+content = REWRITE_OK
+Do not call built-in edit or write. Do not touch any other file. Stop after rewrite_file succeeds.
 "@
-& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build overwrite probe" $rewritePrompt
+
+& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build mutation probe" $rewritePrompt
 if ($LASTEXITCODE -ne 0) {
+  Write-Host "Probe process failed. Current probe content:" -ForegroundColor Red
+  if (Test-Path $rewriteProbe) { Get-Content $rewriteProbe -Raw }
   Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
-  throw "OpenCode overwrite probe process failed."
+  throw "OpenCode mutation probe process failed."
 }
-if (-not (Test-Path $rewriteProbe)) { throw "OpenCode removed the overwrite probe unexpectedly." }
-if ((Get-Content $rewriteProbe -Raw).Trim() -ne "REWRITE_OK") {
+
+if (-not (Test-Path $rewriteProbe)) {
+  throw "OpenCode removed the mutation probe unexpectedly."
+}
+
+$probeActual = (Get-Content $rewriteProbe -Raw).Trim()
+if ($probeActual -ne "REWRITE_OK") {
+  Write-Host "Expected REWRITE_OK but found: [$probeActual]" -ForegroundColor Red
   Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
-  throw "OpenCode cannot overwrite existing files through write. Night Build stopped before product work."
+  throw "Custom rewrite_file probe failed. Night Build stopped before product work."
 }
+
 Remove-Item $rewriteProbe -Force
 
-if (git status --porcelain) { throw "Write probes left unexpected repository changes." }
-Write-Host "WRITE PROBES GREEN (create + overwrite)" -ForegroundColor Green
+if (git status --porcelain) {
+  throw "Mutation probe left unexpected repository changes."
+}
+
+Write-Host "MUTATION PROBE GREEN (custom rewrite_file)" -ForegroundColor Green
 
 $tasks = @(
   @{ Id="03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
@@ -130,9 +132,9 @@ function Has-ProductionChanges([string]$before) {
 
 function Invoke-TaskAgent([hashtable]$task,[string]$taskText,[bool]$retry) {
   if($retry){
-    $instruction="A previous attempt returned without implementation. Do not explain or plan again. The edit tool is disabled: use read + write now. Rewrite complete existing files when necessary."
+    $instruction="A previous attempt returned without implementation. Do not explain or plan again. Built-in edit/write are disabled. Use rewrite_file now. Read complete existing files first and pass complete updated contents."
   } else {
-    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. The edit tool is disabled: use read + write. For an existing file, read it fully and then write the complete updated file."
+    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. Built-in edit/write are disabled. Use the custom rewrite_file tool for every file change. For an existing file, read it fully and pass its complete updated contents to rewrite_file."
   }
 
   $prompt=@"
@@ -184,7 +186,7 @@ function Gate-With-Repair([hashtable]$task,[string]$before) {
     $err=[string]$result.Output
     if($err.Length -gt 12000){$err=$err.Substring($err.Length-12000)}
     $repair=@"
-Repair ONLY the compile errors below in production code changed/required by Task $($task.Id). The edit tool is disabled: read affected files and use write to replace the complete corrected file.
+Repair ONLY the compile errors below in production code changed/required by Task $($task.Id). Built-in edit/write are disabled. Read affected files and use rewrite_file with the complete corrected file.
 Do not edit tests, broaden scope, commit or push.
 
 $err
