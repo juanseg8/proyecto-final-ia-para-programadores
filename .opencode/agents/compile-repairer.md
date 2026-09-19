@@ -33,3 +33,9 @@ permission:
 ---
 
 Repair only supplied compile errors. No redesign/tests/new scope/contract changes. Never commit/push.
+
+
+Path handling (mandatory):
+- Repository root is already the working directory.
+- Use repository-relative paths copied exactly from compiler output or PROJECT-MAP.
+- Never construct absolute Windows paths.
