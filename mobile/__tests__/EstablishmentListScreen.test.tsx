@@ -38,7 +38,7 @@ describe('EstablishmentListScreen', () => {
 
   it('should display the correct title "Mis establecimientos"', async () => {
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: [] });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     await waitFor(() => {
       expect(view.getByRole('header', { name: 'Mis establecimientos' })).toBeTruthy();
     });
@@ -46,7 +46,7 @@ describe('EstablishmentListScreen', () => {
 
   it('should render empty state component in Spanish when there are no establishments', async () => {
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: [] });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     await waitFor(() => {
       expect(view.getByText('Tu campo empieza acá')).toBeTruthy();
     });
@@ -58,7 +58,7 @@ describe('EstablishmentListScreen', () => {
       { id: '2', name: 'Los Alamos', locality: 'Venado Tuerto', province: 'Santa Fe', superficieHa: 800 },
     ];
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: mockData });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     await waitFor(() => {
       expect(view.getByText('Pergamino, Buenos Aires')).toBeTruthy();
       expect(view.getByText('Venado Tuerto, Santa Fe')).toBeTruthy();
@@ -78,7 +78,7 @@ describe('EstablishmentListScreen', () => {
       },
     });
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: [proxyData] });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     await waitFor(() => {
       expect(view.getByText('El ombu')).toBeTruthy();
     });
@@ -86,7 +86,7 @@ describe('EstablishmentListScreen', () => {
 
   it('should use accessible roles for buttons and navigate correctly', async () => {
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: [] });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     let buttons: any[] = [];
     await waitFor(() => {
       buttons = view.getAllByLabelText('Agregar establecimiento');
@@ -101,7 +101,7 @@ describe('EstablishmentListScreen', () => {
       { id: '123', name: 'La Margarita', locality: 'Pergamino', province: 'Buenos Aires', superficieHa: 1500 },
     ];
     (apiClient.get as jest.Mock).mockResolvedValueOnce({ data: mockData });
-    const view = render(<EstablishmentListScreen />);
+    const view = await render(<EstablishmentListScreen />);
     let itemBtn: any;
     await waitFor(() => {
       itemBtn = view.getByRole('button', { name: /la margarita/i });
