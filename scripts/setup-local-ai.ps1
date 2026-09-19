@@ -15,7 +15,7 @@ ollama --version
 Write-Host "Pulling Devstral Small 2 24B..."
 ollama pull devstral-small-2:24b
 
-Write-Host "Creating agro-coder with 8K context..."
+Write-Host "Creating agro-coder with 16K context..."
 ollama create agro-coder -f local-ai/Modelfile
 
 Write-Host "Available OpenCode models:"
