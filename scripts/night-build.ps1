@@ -109,6 +109,32 @@ Repair only these compilation errors. Do not touch tests, specs or unrelated fea
   }
 }
 
+
+function Assert-TaskCompletion([string]$before,[string]$taskId) {
+  $paths = @(Get-ChangedPaths $before)
+  $production = @($paths | Where-Object {
+    $_.Replace("\\","/").StartsWith("backend/") -or
+    ($_.Replace("\\","/").StartsWith("mobile/") -and -not $_.Replace("\\","/").StartsWith("mobile/__tests__/"))
+  })
+
+  if ($production.Count -gt 0) {
+    return
+  }
+
+  $report = ""
+  if (Test-Path "NIGHT_REPORT.md") {
+    $report = Get-Content "NIGHT_REPORT.md" -Raw
+  }
+
+  $token = "NO_CHANGE_NEEDED: $taskId"
+  if ($report -match [regex]::Escape($token)) {
+    Write-Host "Task $taskId explicitly verified as already implemented." -ForegroundColor Yellow
+    return
+  }
+
+  throw "Task $taskId produced no production changes and did not record '$token' with a reason. Treating this as incomplete instead of silently continuing."
+}
+
 $start=-1
 for($i=0;$i -lt $tasks.Count;$i++){if($tasks[$i].Id -eq $StartFrom){$start=$i;break}}
 if($start -lt 0){throw "Unknown StartFrom task."}
@@ -137,6 +163,7 @@ Do not search for alternate tasks. Do not read or edit tests. Do not commit or p
   if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
 
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
+  Assert-TaskCompletion $before $task.Id
   Gate-With-Repair "Task $($task.Id)" $task.Gate $before $task.Id
 
   git add backend mobile NIGHT_REPORT.md
