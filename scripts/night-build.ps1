@@ -131,7 +131,7 @@ $err
 
 Repair only these compilation errors. Do not touch tests, specs or unrelated features. Do not commit or push.
 "@
-    & opencode run --agent compile-repairer --model ollama/agro-coder --auto --title "Compile repair $label" $prompt
+    & opencode run --agent build --model ollama/agro-coder --auto --title "Compile repair $label" $prompt
     if($LASTEXITCODE -ne 0){throw "Compile repair agent failed."}
   }
 }
@@ -212,7 +212,7 @@ $tasks=$tasks[$start..($tasks.Count-1)]
 
 Write-Host "== AGRO INTELLIGENCE NIGHT BUILD V8 FULL MVP =="
 Write-Host "Branch: $branch"
-Write-Host "Model: ollama/agro-coder"
+Write-Host "Model: ollama/agro-coder"`nWrite-Host "OpenCode agent: build (write-capability verified before tasks)"
 Write-Host "No Jest. Product code + compile gates."
 Write-Host "Starting task: $StartFrom"
 
