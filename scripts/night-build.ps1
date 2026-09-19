@@ -110,6 +110,48 @@ Repair only these compilation errors. Do not touch tests, specs or unrelated fea
 }
 
 
+
+function Retry-NoChangeTask([hashtable]$task,[string]$before) {
+  $paths = @(Get-ChangedPaths $before)
+  $production = @($paths | Where-Object {
+    $_.Replace("\\","/").StartsWith("backend/") -or
+    ($_.Replace("\\","/").StartsWith("mobile/") -and -not $_.Replace("\\","/").StartsWith("mobile/__tests__/"))
+  })
+
+  $report = ""
+  if (Test-Path "NIGHT_REPORT.md") { $report = Get-Content "NIGHT_REPORT.md" -Raw }
+  $token = "NO_CHANGE_NEEDED: $($task.Id)"
+
+  if ($production.Count -gt 0 -or $report -match [regex]::Escape($token)) {
+    return
+  }
+
+  Write-Host "Task $($task.Id) returned no implementation. Retrying once with explicit completion instructions..." -ForegroundColor Yellow
+  $taskText = Get-Content $task.File -Raw
+
+  $retryPrompt = @"
+You already inspected the exact files for Task $($task.Id) but returned without implementing or reporting completion.
+
+Execute the task NOW.
+
+$taskText
+
+Rules:
+- use only repository-relative paths from PROJECT-MAP.md;
+- do not read directories or tests;
+- do not repeat broad analysis;
+- if work is required, edit the production files now;
+- if the requested behavior is already fully implemented, update NIGHT_REPORT.md with:
+  NO_CHANGE_NEEDED: $($task.Id) - <specific evidence from the files>
+- do not commit or push;
+- stop only after one of those two outcomes.
+"@
+
+  & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id) completion retry" $retryPrompt
+  if ($LASTEXITCODE -ne 0) { throw "OpenCode completion retry failed on Task $($task.Id)." }
+  Assert-Paths @(Get-ChangedPaths $before) $task.Id
+}
+
 function Assert-TaskCompletion([string]$before,[string]$taskId) {
   $paths = @(Get-ChangedPaths $before)
   $production = @($paths | Where-Object {
@@ -165,6 +207,7 @@ Do not search for alternate tasks. Do not read or edit tests. Do not commit or p
   if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
 
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
+  Retry-NoChangeTask $task $before
   Assert-TaskCompletion $before $task.Id
   Gate-With-Repair "Task $($task.Id)" $task.Gate $before $task.Id
 
