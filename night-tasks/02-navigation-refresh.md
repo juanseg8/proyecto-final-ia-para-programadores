@@ -1,29 +1,35 @@
-# Night Task 02 - Navigation and refresh
+# Task 02 - F02 navigation and refresh
+
+## Authoritative spec
+Read exactly:
+- specs/features/F02-Establecimiento.md
+- specs/ui/UX01-Design-System.md
+
+Do NOT search for another F02 spec. Do NOT invent paths such as mobile/featureSpecs.
+
+## Production files to inspect
+Read exactly these first:
+- mobile/App.tsx
+- mobile/src/screens/EstablishmentListScreen.tsx
+- mobile/src/screens/EstablishmentFormScreen.tsx
+- mobile/src/screens/EstablishmentDetailScreen.tsx
+- mobile/src/apiClient.ts
+
+Read additional mobile production files only when one of these imports them and they are directly needed.
 
 ## Goal
-Stabilize existing F02 navigation and fresh data after CREATE/UPDATE/DELETE.
+Stabilize the existing F02 mobile flow:
+- CREATE returns to a fresh establishment list/detail as defined by the current navigation flow;
+- UPDATE refreshes the relevant detail/list state;
+- DELETE returns correctly and leaves the list fresh;
+- no technical route name is visible to the user;
+- preserve the canonical F02 payload and backend contract.
 
-## Allowed production area
-- mobile/App.tsx
-- mobile/src/screens/**
-- mobile/src/components/**
-- mobile/src/apiClient.ts
-- NIGHT_REPORT.md
-
-## Do
-- inspect current navigation/screens before editing;
-- preserve canonical F02 payload behavior;
-- ensure CREATE returns to a fresh establishment list;
-- ensure UPDATE refreshes the relevant detail/list state;
-- ensure DELETE returns correctly and list is fresh;
-- remove user-visible technical route names if present;
-- reuse existing navigation/refetch patterns.
-
-## Do not
-- read/edit/create tests;
-- alter backend;
-- invent routes/features;
-- add timeout hacks;
-- create root src/.
-
-Compile with TypeScript, update Task 02 in NIGHT_REPORT.md, then stop.
+## Rules
+- Do not read directories; read concrete files.
+- Do not inspect backend unless the F02 spec is insufficient for a specific contract detail.
+- Do not read/edit tests.
+- Do not add timeout hacks.
+- Do not invent routes or future features.
+- Update NIGHT_REPORT.md with what was changed.
+- This task is not complete merely because TypeScript already compiles.
