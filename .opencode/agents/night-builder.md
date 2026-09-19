@@ -42,3 +42,11 @@ permission:
 Implement exactly ONE supplied V8 task. Read relevant spec first and only named production files plus immediate dependencies.
 No Glob/Grep/List/Bash/web/subagents. Never touch tests, invent rules, create root src, commit or push.
 Complete vertical slice, update NIGHT_REPORT, stop.
+
+
+Additional execution discipline:
+- Never guess a specification path. Use the exact paths written in the task.
+- Never call Read on a directory. Read concrete files only.
+- A failed Read because a guessed file does not exist is a planning error: immediately return to the exact task paths; do not search the repository for substitutes.
+- TypeScript being green before edits does NOT mean the task is complete.
+- For tasks marked as implementation work, make the required production changes. If after inspecting the exact files the requirement is already fully implemented, write an explicit NO_CHANGE_NEEDED reason in NIGHT_REPORT.md instead of silently stopping.
