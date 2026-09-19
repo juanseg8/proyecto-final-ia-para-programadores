@@ -1,24 +1,25 @@
-# Night Task 05 - Map sanity
+# Task 05 - F02 map sanity
+
+## Authoritative specs
+Read exactly:
+- specs/features/F02-Establecimiento.md
+- specs/ui/UX01-Design-System.md
+
+## Production files to inspect
+- mobile/src/components/MapLocationPicker.tsx
+- mobile/src/screens/EstablishmentFormScreen.tsx
+- mobile/app.config.js
+- mobile/app.json
+- mobile/.env.example
 
 ## Goal
-Fix code-level issues in the existing F02 map flow.
-
-## Verify in production code
-- react-native-maps stays inside the mobile architecture;
-- marker state exists;
-- manual selection remains possible;
-- GPS flow remains possible;
-- denied permission does not break manual fallback;
+Fix code-level issues in the existing map flow:
+- react-native-maps with Google provider remains correctly integrated;
+- marker/manual selection works in code;
+- GPS flow exists and permission denial preserves manual fallback;
+- remove duplicate/dead GPS controls;
 - API keys are not hardcoded;
-- platform config continues to use environment variables.
+- platform config uses environment variables.
 
-## Important
-Do not claim real-device map approval without an actual device/development build.
-If a remaining issue needs device verification, report BLOCKED: REAL_DEVICE_REQUIRED.
-
-Do not read/edit tests.
-Do not add secrets.
-Do not touch backend.
-Do not create root src/.
-
-Compile with TypeScript, update Task 05 in NIGHT_REPORT.md and stop.
+Do not claim real-device approval. Record REAL_DEVICE_REQUIRED in NIGHT_REPORT.md.
+Do not read/edit tests. Do not search for alternate task/spec files.
