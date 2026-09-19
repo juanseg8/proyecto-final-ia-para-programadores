@@ -11,20 +11,47 @@ if (-not $branch) { throw "Not inside a git repository." }
 if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-refactor") { throw "Use dedicated night-build branch." }
 if (git status --porcelain) { throw "Working tree is not clean." }
 
+Write-Host "NIGHT BUILD write probe..." -ForegroundColor Cyan
+$probeFile = "night-agent-write-probe.txt"
+if (Test-Path $probeFile) { Remove-Item $probeFile -Force }
+
+$probePrompt = @"
+This is a mandatory write-capability probe.
+Create exactly one file at repository root named night-agent-write-probe.txt with exactly this text:
+WRITE_OK
+Do not read or modify any other file. Do not commit or push. Stop immediately after creating the file.
+"@
+
+& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build write probe" $probePrompt
+if ($LASTEXITCODE -ne 0) { throw "OpenCode write probe process failed." }
+
+if (-not (Test-Path $probeFile)) {
+  throw "OpenCode did not create the write probe. Night Build cannot safely start because the agent is not writing files."
+}
+$probeContent = (Get-Content $probeFile -Raw).Trim()
+if ($probeContent -ne "WRITE_OK") {
+  throw "OpenCode write probe created unexpected content."
+}
+Remove-Item $probeFile -Force
+if (git status --porcelain) {
+  throw "Write probe left unexpected repository changes."
+}
+Write-Host "WRITE PROBE GREEN" -ForegroundColor Green
+
 $tasks = @(
-  @{ Id="02"; Agent="night-02"; File="night-tasks/02-navigation-refresh.md"; Gate="mobile"; Commit="night: stabilize F02 navigation and refresh" },
-  @{ Id="03"; Agent="night-03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
-  @{ Id="04"; Agent="night-04"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
-  @{ Id="05"; Agent="night-05"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
-  @{ Id="10"; Agent="night-10"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
-  @{ Id="11"; Agent="night-11"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
-  @{ Id="12"; Agent="night-12"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
-  @{ Id="13"; Agent="night-13"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
-  @{ Id="14"; Agent="night-14"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
-  @{ Id="15"; Agent="night-15"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
-  @{ Id="16"; Agent="night-16"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
-  @{ Id="17"; Agent="night-17"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
-  @{ Id="18"; Agent="night-18"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
+  @{ Id="02"; Agent="build"; File="night-tasks/02-navigation-refresh.md"; Gate="mobile"; Commit="night: stabilize F02 navigation and refresh" },
+  @{ Id="03"; Agent="build"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
+  @{ Id="04"; Agent="build"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
+  @{ Id="05"; Agent="build"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
+  @{ Id="10"; Agent="build"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
+  @{ Id="11"; Agent="build"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
+  @{ Id="12"; Agent="build"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
+  @{ Id="13"; Agent="build"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
+  @{ Id="14"; Agent="build"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
+  @{ Id="15"; Agent="build"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
+  @{ Id="16"; Agent="build"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
+  @{ Id="17"; Agent="build"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
+  @{ Id="18"; Agent="build"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
 )
 
 function Get-ChangedPaths([string]$before) {
@@ -130,7 +157,8 @@ function Retry-NoChangeTask([hashtable]$task,[string]$before) {
   $taskText = Get-Content $task.File -Raw
 
   $retryPrompt = @"
-You already inspected the exact files for Task $($task.Id) but returned without implementing or reporting completion.
+You previously returned without producing the required implementation.
+Do not explain or plan again. Use file edit/write tools now.
 
 Execute the task NOW.
 
@@ -194,7 +222,9 @@ foreach($task in $tasks){
   $before=(git rev-parse HEAD).Trim()
   $taskText=Get-Content $task.File -Raw
   $prompt=@"
-Read AGENTS.md, OVERNIGHT-MVP.md, MVP-EXECUTION-PLAN.md, PROJECT-MAP.md and the relevant feature spec.
+You are the implementation worker. Your output is judged by actual file changes, not by prose.
+Read the exact files required by this task, then IMPLEMENT it using file edit/write tools.
+Do not stop after analysis or say what you plan to do.
 Execute exactly this task:
 
 $taskText
