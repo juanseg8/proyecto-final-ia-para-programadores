@@ -27,17 +27,22 @@ const replacements = [
   ['\u00c3\u0091', '\u00d1'],
   ['\u00c2\u00bf', '\u00bf'],
   ['\u00c2\u00a1', '\u00a1'],
-  ['\u00e2\u20ac\u00ba', '>'],
-  ['\u00e2\u20ac\u00b9', '<'],
-  ['\u00e2\u20ac\u201d', '-'],
+
+  // Keep JSX-safe typographic symbols. Never replace these with raw < or >.
+  ['\u00e2\u20ac\u00ba', '\u203a'],
+  ['\u00e2\u20ac\u00b9', '\u2039'],
+  ['\u00e2\u20ac\u201d', '\u2014'],
   ['\u00e2\u2020\u2019', ''],
   ['\u00e2\u2013\u00aa', ''],
   ['\u00ef\u00bc\u2039', '+'],
+
+  // Corrupted emoji sequences currently present in the project.
   ['\u00f0\u0178\u0152\u00bf', ''],
   ['\u00f0\u0178\u201c\u008d', ''],
   ['\u00f0\u0178\u201c\u0160', ''],
   ['\u00f0\u0178\u008f\u00a0', ''],
-  ['Buen d\u00eca', 'Buen d\u00eda'],
+
+  // Real emoji/icon glyphs that should not remain as production iconography.
   ['\u{1F33F}', ''],
   ['\u{1F4CD}', ''],
   ['\u{1F4CA}', ''],
@@ -46,6 +51,9 @@ const replacements = [
   ['\u{1F648}', 'Ocultar'],
   ['\u{1F441}', 'Ver'],
   ['\u2709', '@'],
+
+  // Known one-off typo created by an earlier interrupted attempt.
+  ['Buen d\u00eca', 'Buen d\u00eda'],
 ];
 
 let changed = 0;
