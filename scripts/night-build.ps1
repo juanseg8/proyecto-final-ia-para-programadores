@@ -11,7 +11,8 @@ if (git status --porcelain) {
 }
 
 $tasks = @(
-  @{ Id = "01"; File = "night-tasks/01-encoding-icons.md"; Commit = "night: fix mobile encoding and iconography" },
+  @{ Id = "01A"; File = "night-tasks/01a-home-login-encoding.md"; Commit = "night: fix Home and Login encoding" },
+  @{ Id = "01B"; File = "night-tasks/01b-establishment-encoding.md"; Commit = "night: fix establishment screen encoding" },
   @{ Id = "02"; File = "night-tasks/02-navigation-refresh.md"; Commit = "night: stabilize establishment navigation and refresh" },
   @{ Id = "03"; File = "night-tasks/03-georef-searchable-select.md"; Commit = "night: consolidate GeoRef searchable selectors" },
   @{ Id = "04"; File = "night-tasks/04-ui-foundation-cleanup.md"; Commit = "night: normalize mobile UI foundation" },
@@ -20,7 +21,6 @@ $tasks = @(
 
 function Get-ChangedPaths([string]$beforeSha) {
   $paths = @()
-
   $committed = git diff --name-only "$beforeSha..HEAD"
   if ($committed) { $paths += $committed }
 
@@ -66,10 +66,10 @@ function Run-MobileGate {
   }
 }
 
-Write-Host "== Agro Intelligence NIGHT BUILD V2 =="
+Write-Host "== Agro Intelligence NIGHT BUILD V3 =="
 Write-Host "Branch: $branch"
 Write-Host "Model: ollama/agro-coder"
-Write-Host "Scope: mobile/ only"
+Write-Host "Scope: mobile/ only, one small task per OpenCode run"
 
 foreach ($task in $tasks) {
   Write-Host ""
@@ -84,8 +84,13 @@ Then execute exactly this task:
 
 $taskPrompt
 
-This is one isolated task. Do not continue to another task.
-Do not commit or push.
+IMPORTANT:
+- Do not glob the repository.
+- Do not inspect files outside the exact list in the task.
+- Do not reread unchanged files.
+- This is one isolated task.
+- Do not continue to another task.
+- Do not commit or push.
 "@
 
   & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro Night Task $($task.Id)" $prompt
@@ -95,7 +100,6 @@ Do not commit or push.
 
   $paths = @(Get-ChangedPaths $before)
   Assert-AllowedPaths $paths
-
   Run-MobileGate
 
   git add mobile NIGHT_REPORT.md
@@ -114,5 +118,5 @@ Write-Host "== Final mobile gate ==" -ForegroundColor Cyan
 Run-MobileGate
 
 Write-Host ""
-Write-Host "NIGHT BUILD V2 finished." -ForegroundColor Green
+Write-Host "NIGHT BUILD V3 finished." -ForegroundColor Green
 Write-Host "No push was performed."
