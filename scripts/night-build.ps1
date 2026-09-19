@@ -157,6 +157,8 @@ Execute exactly this task:
 
 $taskText
 
+Use only repository-relative paths copied verbatim from the task and PROJECT-MAP.md.
+Never construct absolute Windows paths and never Read a directory.
 Do not search for alternate tasks. Do not read or edit tests. Do not commit or push.
 "@
   & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
