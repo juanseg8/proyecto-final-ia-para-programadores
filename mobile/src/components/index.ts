@@ -6,3 +6,4 @@ export * from './FormField';
 export * from './BottomNav';
 export * from './AppHeader';
 export * from './feedback';
+export * from './SearchableSelect';

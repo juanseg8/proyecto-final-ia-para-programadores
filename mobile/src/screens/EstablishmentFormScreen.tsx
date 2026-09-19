@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, Button } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { apiClient } from '../apiClient';
 import MapLocationPicker from '../components/MapLocationPicker';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -10,17 +10,17 @@ import { AppHeader } from '../components/AppHeader';
 import { AppInput } from '../components/AppInput';
 import { theme } from '../theme/theme';
 import { georefService, Province, Locality } from '../services/georefService';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 export const EstablishmentFormScreen = () => {
   const route = useRoute();
-  console.log('RENDER', route);
   const navigation = useNavigation();
   const params = route.params as { id?: string } | undefined;
   const isEditing = !!params?.id;
 
   const [name, setName] = useState('');
-  const [province, setProvince] = useState('');
-  const [locality, setLocality] = useState('');
+  const [province, setProvince] = useState<Province | null>(null);
+  const [locality, setLocality] = useState<Locality | null>(null);
   const [surface, setSurface] = useState('');
   const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
   const [errorMessage, setErrorMessage] = useState('');
@@ -29,9 +29,8 @@ export const EstablishmentFormScreen = () => {
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [localities, setLocalities] = useState<Locality[]>([]);
   const [geoError, setGeoError] = useState('');
-  
-  const [showProvModal, setShowProvModal] = useState(false);
-  const [showLocModal, setShowLocModal] = useState(false);
+  const [provincesLoading, setProvincesLoading] = useState(false);
+  const [localitiesLoading, setLocalitiesLoading] = useState(false);
 
   const nameRef = useRef(name);
   const provRef = useRef(province);
@@ -41,27 +40,30 @@ export const EstablishmentFormScreen = () => {
 
   const loadProvinces = async () => {
     setGeoError('');
+    setProvincesLoading(true);
     try {
       const data = await georefService.getProvinces();
       setProvinces(data);
     } catch (e) {
       setGeoError('Error al cargar provincias');
+    } finally {
+      setProvincesLoading(false);
     }
   };
 
   const loadLocalities = async (provName: string) => {
-    console.log(`loadLocalities CALLED with ${provName}`);
     if (!provName) {
       setLocalities([]);
       return;
     }
+    setLocalitiesLoading(true);
     try {
       const data = await georefService.getLocalities(provName);
-      console.log(`loadLocalities RESOLVED with data for ${provName}`);
       setLocalities(data);
-      console.log(`loadLocalities STATE UPDATED for ${provName}`);
     } catch (e) {
       // ignore
+    } finally {
+      setLocalitiesLoading(false);
     }
   };
 
@@ -75,10 +77,10 @@ export const EstablishmentFormScreen = () => {
         const est = res.data;
         setName(est.name || '');
         nameRef.current = est.name || '';
-        setProvince(est.province || '');
-        provRef.current = est.province || '';
-        setLocality(est.locality || '');
-        locRef.current = est.locality || '';
+        setProvince(provinces.find(p => p.nombre === est.province) || null);
+        provRef.current = provinces.find(p => p.nombre === est.province) || null;
+        setLocality(localities.find(l => l.nombre === est.locality) || null);
+        locRef.current = localities.find(l => l.nombre === est.locality) || null;
         const surf = est.superficieHa !== undefined ? String(est.superficieHa) : '';
         setSurface(surf);
         surRef.current = surf;
@@ -96,7 +98,7 @@ export const EstablishmentFormScreen = () => {
         setLoading(false);
       });
     }
-  }, [isEditing, params?.id]);
+  }, [isEditing, params?.id, provinces, localities]);
 
   const handleSave = async () => {
     setErrorMessage('');
@@ -104,8 +106,8 @@ export const EstablishmentFormScreen = () => {
       const superficieHa = Number(surRef.current);
       const payload = {
         name: nameRef.current,
-        province: provRef.current,
-        locality: locRef.current,
+        province: provRef.current?.nombre || '',
+        locality: locRef.current?.nombre || '',
         superficieHa: isNaN(superficieHa) ? 0 : superficieHa,
         latitude: locRefObj.current.latitude,
         longitude: locRefObj.current.longitude,
@@ -126,19 +128,17 @@ export const EstablishmentFormScreen = () => {
     }
   };
 
-  const selectProvince = (provName: string) => {
-    setProvince(provName);
-    provRef.current = provName;
-    setLocality('');
-    locRef.current = '';
-    setShowProvModal(false);
-    loadLocalities(provName);
+  const selectProvince = (prov: Province) => {
+    setProvince(prov);
+    provRef.current = prov;
+    setLocality(null);
+    locRef.current = null;
+    loadLocalities(prov.nombre);
   };
 
-  const selectLocality = (locName: string) => {
-    setLocality(locName);
-    locRef.current = locName;
-    setShowLocModal(false);
+  const selectLocality = (loc: Locality) => {
+    setLocality(loc);
+    locRef.current = loc;
   };
 
   if (loading) {
@@ -154,13 +154,6 @@ export const EstablishmentFormScreen = () => {
       />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-        
-        {geoError ? (
-          <View style={{ marginBottom: theme.spacing[12] }}>
-            <Text style={styles.errorText}>{geoError}</Text>
-            <AppButton title="Reintentar" onPress={loadProvinces} />
-          </View>
-        ) : null}
 
         <FormField label="Nombre">
           <AppInput
@@ -170,7 +163,7 @@ export const EstablishmentFormScreen = () => {
             onChangeText={(t) => { setName(t); nameRef.current = t; }}
           />
         </FormField>
-        
+
         <FormField label="Superficie">
           <View style={styles.surfaceContainer}>
             <AppInput
@@ -187,85 +180,44 @@ export const EstablishmentFormScreen = () => {
 
         <Text style={styles.sectionTitle}>Ubicación</Text>
 
-        <AppButton 
-          title="Obtener por GPS" 
-          onPress={() => {}} 
+        <AppButton
+          title="Obtener por GPS"
+          onPress={() => {}}
           style={{ marginBottom: theme.spacing[16], backgroundColor: theme.colors.primaryLight }}
           accessibilityLabel="Usar GPS"
         />
 
-        <FormField label="Provincia">
-          <TouchableOpacity
-            testID="province-selector"
-            onPress={() => setShowProvModal(true)}
-          >
-            <AppInput
-              placeholder="Seleccionar Provincia"
-              value={province}
-              editable={false}
-              pointerEvents="none"
-              disabled={false}
-            />
-          </TouchableOpacity>
-        </FormField>
-        
-        <FormField label="Localidad">
-          <TouchableOpacity
-            testID="locality-selector"
-            onPress={() => {
-              if (province) setShowLocModal(true);
-            }}
-            disabled={!province}
-            accessibilityState={{ disabled: !province }}
-          >
-            <AppInput
-              placeholder="Seleccionar Localidad"
-              value={locality}
-              editable={false}
-              pointerEvents="none"
-              disabled={!province}
-            />
-          </TouchableOpacity>
-        </FormField>
-        
+        <SearchableSelect
+          label="Provincia"
+          items={provinces}
+          selectedItem={province}
+          onSelect={selectProvince}
+          onRetry={loadProvinces}
+          loading={provincesLoading}
+          error={geoError}
+          getLabel={(item: Province) => item.nombre}
+          placeholder="Seleccionar Provincia"
+          searchable={true}
+        />
+
+        <SearchableSelect
+          label="Localidad"
+          items={localities}
+          selectedItem={locality}
+          onSelect={selectLocality}
+          loading={localitiesLoading}
+          disabled={!province}
+          getLabel={(item: Locality) => item.nombre}
+          placeholder="Seleccionar Localidad"
+          searchable={true}
+          emptyMessage={province ? 'Cargando localidades...' : 'Primero seleccione una provincia'}
+        />
+
         <MapLocationPicker
           onLocationSelected={(loc) => { setLocation(loc); locRefObj.current = loc; }}
         />
-        
+
         <AppButton title="Guardar" onPress={handleSave} style={{ marginTop: theme.spacing[24] }} />
-
-        {/* Modals inline to avoid RTL Modal issues */}
-        {showProvModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Provincia</Text>
-              <ScrollView>
-                {provinces.map((item) => (
-                  <TouchableOpacity key={item.id} style={styles.modalItem} onPress={() => selectProvince(item.nombre)}>
-                    <Text style={styles.modalItemText}>{item.nombre}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <Button title="Cerrar" onPress={() => setShowProvModal(false)} />
-            </View>
-          </View>
-        )}
-
-        {showLocModal && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Localidad</Text>
-              <ScrollView>
-                {localities.map((item) => (
-                  <TouchableOpacity key={item.id} style={styles.modalItem} onPress={() => selectLocality(item.nombre)}>
-                    <Text style={styles.modalItemText}>{item.nombre}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <Button title="Cerrar" onPress={() => setShowLocModal(false)} />
-            </View>
-          </View>
-        )}
       </ScrollView>
     </AppScreen>
   );
@@ -293,46 +245,9 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginLeft: theme.spacing[12],
   },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: theme.spacing[12],
-    borderRadius: theme.radius.input,
-    ...theme.typography.body,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.textPrimary,
-  },
-  disabledInput: {
-    backgroundColor: '#f0f0f0',
-    color: '#999',
-  },
   errorText: {
     color: theme.colors.error,
     marginBottom: theme.spacing[12],
     ...theme.typography.body,
   },
-  modalOverlay: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    padding: 10,
-    marginTop: 10,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    maxHeight: 200,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  modalItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalItemText: {
-    fontSize: 16,
-  }
 });
