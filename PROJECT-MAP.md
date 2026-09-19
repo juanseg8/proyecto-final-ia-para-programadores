@@ -1,6 +1,8 @@
 # PROJECT MAP - Agro Intelligence Network
 
 Este archivo evita exploraciones y rutas inventadas durante NIGHT_BUILD.
+TODAS las rutas de este archivo son relativas a la raíz del repositorio.
+Copiarlas literalmente. Nunca anteponer C:/Users/... ni construir rutas absolutas de Windows.
 Regla: leer archivos concretos de este mapa. No hacer Read sobre directorios y no buscar specs alternativas.
 
 ## Root
