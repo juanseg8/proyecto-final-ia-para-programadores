@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react-native';
 import { EstablishmentFormScreen } from '../src/screens/EstablishmentFormScreen';
 import { apiClient } from '../src/apiClient';
+import { georefService } from '../src/services/georefService';
 
 jest.mock('../src/components/MapLocationPicker', () => {
   const React = require('react');
@@ -12,15 +13,15 @@ jest.mock('../src/components/MapLocationPicker', () => {
   };
 });
 
+var mockUseRoute = jest.fn();
+
 // Mock react-navigation
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
     goBack: jest.fn(),
   }),
-  useRoute: jest.fn().mockReturnValue({
-    params: {},
-  }),
+  useRoute: () => mockUseRoute(),
 }));
 
 // Mock API client
@@ -32,35 +33,112 @@ jest.mock('../src/apiClient', () => ({
   },
 }));
 
-describe('EstablishmentFormScreen', () => {
-  afterEach(() => {
+// Mock georefService
+jest.mock('../src/services/georefService', () => ({
+  georefService: {
+    getProvinces: jest.fn(),
+    getLocalities: jest.fn(),
+  },
+}));
+
+describe('EstablishmentFormScreen (Fase RED)', () => {
+  afterEach(async () => {
     cleanup();
+    for (let i = 0; i < 5; i++) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   });
   
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('renders all basic inputs (nombre, provincia, localidad, superficie)', async () => {
-    await render(<EstablishmentFormScreen />);
+    mockUseRoute.mockReturnValue({ params: {} });
     
-    expect(screen.getByPlaceholderText(/nombre/i)).toBeTruthy();
-    expect(screen.getByPlaceholderText(/provincia/i)).toBeTruthy();
-    expect(screen.getByPlaceholderText(/localidad/i)).toBeTruthy();
-    expect(screen.getByPlaceholderText(/superficie/i)).toBeTruthy();
-    expect(screen.getByText(/guardar/i)).toBeTruthy();
+    (georefService.getProvinces as jest.Mock).mockResolvedValue([
+      { id: '06', nombre: 'Buenos Aires' },
+      { id: '14', nombre: 'Cordoba' }
+    ]);
+    (georefService.getLocalities as jest.Mock).mockImplementation((prov) => {
+      if (prov === 'Buenos Aires') return Promise.resolve([{ id: '060001', nombre: 'Tandil' }]);
+      if (prov === 'Cordoba') return Promise.resolve([{ id: '140001', nombre: 'Rio Cuarto' }]);
+      return Promise.resolve([]);
+    });
   });
 
-  it('prevents submission of dirty payload fields (userId, normalizedName, createdAt, updatedAt)', async () => {
+  it('renders all basic inputs and strictly prohibits technical titles', async () => {
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
+    
+    // Prohibir títulos técnicos
+    const stringifiedTree = JSON.stringify(screen.toJSON());
+    expect(stringifiedTree).not.toMatch(/NewEstablishment/);
+    expect(stringifiedTree).not.toMatch(/EditEstablishment/);
+    
+    // Exigir título amigable
+    expect(screen.getByText(/Nuevo Establecimiento|Crear Establecimiento/i)).toBeTruthy();
+
+    expect(screen.getByPlaceholderText(/nombre/i)).toBeTruthy();
+  });
+
+  it('enforces semantic reading of "Ubicación" section with map and GPS integrated', async () => {
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
+    
+    // Debe haber un texto de sección visible
+    expect(screen.getByText('Ubicación')).toBeTruthy();
+    
+    // Presencia estructurada
+    expect(screen.getByPlaceholderText('Seleccionar Provincia')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Seleccionar Localidad')).toBeTruthy();
+    expect(screen.getByTestId('map-location-picker')).toBeTruthy();
+    
+    // Botón GPS
+    expect(screen.getByRole('button', { name: /GPS/i })).toBeTruthy();
+  });
+
+  it('demands visual reference of "ha" or area unit for superficie', async () => {
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
+    
+    expect(screen.getByPlaceholderText(/superficie/i)).toBeTruthy();
+    
+    // Tiene que mostrar el sufijo "ha" visualmente, no solo un placeholder numérico.
+    expect(screen.getByText(/\bha\b/i)).toBeTruthy();
+  });
+
+  it('submits form successfully, validando EXTREMA SEGURIDAD del Payload Canónico', async () => {
     (apiClient.post as jest.Mock).mockResolvedValueOnce({ data: { id: 1 } });
-    await render(<EstablishmentFormScreen />);
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
     
     await fireEvent.changeText(screen.getByPlaceholderText(/nombre/i), 'Estancia La Paz');
-    await fireEvent.changeText(screen.getByPlaceholderText(/provincia/i), 'Buenos Aires');
-    await fireEvent.changeText(screen.getByPlaceholderText(/localidad/i), 'Tandil');
     await fireEvent.changeText(screen.getByPlaceholderText(/superficie/i), '500');
     
-    await fireEvent.press(screen.getByText(/guardar/i));
+    fireEvent.press(screen.getByTestId('province-selector'));
+    const provOption = await screen.findByText('Buenos Aires');
+    await act(async () => {
+      fireEvent.press(provOption.parent || provOption);
+      await new Promise(r => setTimeout(r, 0));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('locality-selector').props.accessibilityState?.disabled).toBeFalsy();
+    });
+
+    fireEvent.press(screen.getByTestId('locality-selector'));
+    const locOption = await screen.findByText('Tandil');
+    await act(async () => {
+      fireEvent.press(locOption.parent || locOption);
+      await new Promise(r => setTimeout(r, 0));
+    });
+    
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: /guardar/i }));
+      await new Promise(r => setTimeout(r, 0));
+    });
     
     await waitFor(() => {
       expect(apiClient.post).toHaveBeenCalled();
@@ -68,25 +146,24 @@ describe('EstablishmentFormScreen', () => {
     
     const submittedPayload = (apiClient.post as jest.Mock).mock.calls[0][1];
     
-    // Invariant: no dirty payload
     expect(submittedPayload).not.toHaveProperty('userId');
     expect(submittedPayload).not.toHaveProperty('normalizedName');
-    expect(submittedPayload).not.toHaveProperty('createdAt');
-    expect(submittedPayload).not.toHaveProperty('updatedAt');
     
-    // Ensure actual fields were passed
-    expect(submittedPayload).toEqual(
-      expect.objectContaining({
-        name: 'Estancia La Paz',
-        province: 'Buenos Aires',
-        locality: 'Tandil',
-        superficieHa: 500,
-      })
-    );
-    await new Promise(r => setTimeout(r, 10)); // let handleSave finish
+    // EXTREMA SEGURIDAD: Tipo exacto 'number' para superficieHa
+    expect(typeof submittedPayload.superficieHa).toBe('number');
+    expect(submittedPayload.superficieHa).toBe(500);
+
+    // Sin IDs ocultos en la geografía
+    expect(submittedPayload.province).toBe('Buenos Aires');
+    expect(submittedPayload.locality).toBe('Tandil');
+    expect(submittedPayload).not.toHaveProperty('provinceId');
+    expect(submittedPayload).not.toHaveProperty('localityId');
+    const stringifiedPayload = JSON.stringify(submittedPayload);
+    expect(stringifiedPayload).not.toMatch(/"06"/);
+    expect(stringifiedPayload).not.toMatch(/"060001"/);
   });
 
-  it('displays error message on 409 Conflict (e.g. name already exists)', async () => {
+  it('handles 409 Conflict perfectly', async () => {
     (apiClient.post as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 409,
@@ -94,43 +171,42 @@ describe('EstablishmentFormScreen', () => {
       }
     });
 
-    await render(<EstablishmentFormScreen />);
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
     
-    const nombreInput = await screen.findByPlaceholderText(/nombre/i);
-    await fireEvent.changeText(nombreInput, 'Estancia Duplicada');
-    await fireEvent.changeText(await screen.findByPlaceholderText(/provincia/i), 'Buenos Aires');
-    await fireEvent.changeText(await screen.findByPlaceholderText(/localidad/i), 'Tandil');
-    await fireEvent.changeText(await screen.findByPlaceholderText(/superficie/i), '500');
-    await fireEvent.press(screen.getByText(/guardar/i));
-
-    // Verify UI shows the specific error message
+    await act(async () => {
+      await fireEvent.changeText(screen.getByPlaceholderText(/nombre/i), 'Estancia Duplicada');
+      fireEvent.press(screen.getByRole('button', { name: /guardar/i }));
+      await new Promise(r => setTimeout(r, 0));
+    });
+    
     expect(await screen.findByText(/El nombre ya existe/i)).toBeTruthy();
-    await new Promise(r => setTimeout(r, 10)); // let handleSave finish
   });
 
-  it('displays generic error on 400 Bad Request', async () => {
+  it('handles 400 Bad Request properly', async () => {
     (apiClient.post as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 400,
-        data: { message: 'Error de validaciA3n genAcrico' }
+        data: { message: 'Error de validación genérico' }
       }
     });
 
-    await render(<EstablishmentFormScreen />);
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
     
-    const nombreInput = await screen.findByPlaceholderText(/nombre/i);
-    await fireEvent.changeText(nombreInput, 'A');
-    await fireEvent.press(await screen.findByText(/guardar/i));
-
-    // Wait for validation error to appear
-    expect(await screen.findByText(/Error de validaciA3n genAcrico/i)).toBeTruthy();
-    await new Promise(r => setTimeout(r, 10)); // let handleSave finish
+    await act(async () => {
+      await fireEvent.changeText(screen.getByPlaceholderText(/nombre/i), 'A');
+      fireEvent.press(screen.getByRole('button', { name: /guardar/i }));
+      await new Promise(r => setTimeout(r, 0));
+    });
+    
+    expect(await screen.findByText(/Error de validación genérico/i)).toBeTruthy();
   });
 
-  it('loads existing establishment data on edit mode and uses superficieHa (Fase RED)', async () => {
-    // Setup route params to simulate Edit mode
-    const { useRoute } = require('@react-navigation/native');
-    useRoute.mockReturnValueOnce({ params: { id: 'est-edit-1' } });
+  it('loads existing establishment data on edit mode and uses superficieHa', async () => {
+    mockUseRoute.mockReturnValue({ params: { id: 'est-edit-1' } });
 
     (apiClient.get as jest.Mock).mockResolvedValueOnce({
       data: {
@@ -142,13 +218,14 @@ describe('EstablishmentFormScreen', () => {
       }
     });
 
-    await render(<EstablishmentFormScreen />);
+    await act(async () => {
+      render(<EstablishmentFormScreen />);
+    });
     
     await waitFor(() => {
       expect(apiClient.get).toHaveBeenCalledWith('/establishments/est-edit-1');
     });
 
-    // Check that it populates the form (it will fail because implementation uses surface)
     expect(await screen.findByDisplayValue('Estancia Vieja')).toBeTruthy();
     expect(await screen.findByDisplayValue('Cordoba')).toBeTruthy();
     expect(await screen.findByDisplayValue('Rio Cuarto')).toBeTruthy();

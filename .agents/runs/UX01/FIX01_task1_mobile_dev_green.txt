@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 1 (Navegación + Auto Refresh)
+status: GREEN
+actionsTaken:
+  - Consolidó las rutas en `App.tsx`, corrigiendo los mapeos (`NewEstablishment` a `EstablishmentForm`) para erradicar el bug de NAVIGATE payload missing.
+  - Implementó `useFocusEffect` con `useCallback` en `EstablishmentListScreen.tsx` y `EstablishmentDetailScreen.tsx` para forzar la resincronización automática de datos al volver a la pantalla.
+  - Ajustó la suite E2E con entornos `act()` precisos y envolturas limpias del `NavigationContainer`.
+  - Aseguró una simulación síncrona de `useFocusEffect` en las pruebas unitarias aisladas.
+  - Ejecutó `npx jest` alcanzando el 100% (56/56 tests aprobados).

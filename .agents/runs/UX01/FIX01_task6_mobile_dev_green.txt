@@ -1,0 +1,10 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 6 (Home + Navegación principal)
+status: GREEN
+actionsTaken:
+  - Generó algoritmo de iniciales dinámicas para el Avatar (ej. Juan Pérez -> JP).
+  - Diseñó e inyectó la Hero Card respetando el mockup usando Foundation.
+  - Implementó el enrutamiento correcto hacia `EstablishmentList` para el acceso principal.
+  - Neutralizó por completo las features falsas ("Próximamente"), deshabilitando la propagación a React Navigation.
+  - Ocultó/Rediseñó el botón de Logout como un link no invasivo.
+  - Suite de HomeScreen en GREEN.

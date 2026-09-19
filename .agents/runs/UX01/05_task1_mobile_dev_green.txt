@@ -1,0 +1,7 @@
+agent: mobile-dev
+task: UX01 - Tarea 1 (Design Tokens)
+status: GREEN
+actionsTaken:
+  - Leyó specs/ui/UX01-Design-System.md.
+  - Creó mobile/src/theme/theme.ts con exports para colors, typography, spacing y radius basados en AgTech Premium.
+  - Ejecutó `npx jest` logrando 35/35 tests en verde.

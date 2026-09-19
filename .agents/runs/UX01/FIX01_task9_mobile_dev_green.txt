@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 9 (Detalle + Delete)
+status: GREEN
+actionsTaken:
+  - Formateó el renderizado uniendo `${locality}, ${province}` e incorporando "ha".
+  - Depuró la interfaz de error INV-05 omitiendo tecnicismos crudos ("No se pudo cargar").
+  - Parametrizó el `AppButton` de borrado con la variante "danger".
+  - Inyectó `ConfirmDialog` condicionando el borrado real a la pulsación explícita del botón "Eliminar".
+  - Ejecutó `npx jest` logrando el 100% GREEN sobre la suite del Detalle.

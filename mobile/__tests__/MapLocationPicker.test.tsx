@@ -11,6 +11,7 @@ jest.mock('react-native-maps', () => {
     __esModule: true,
     default: MockMapView,
     Marker: MockMarker,
+    PROVIDER_GOOGLE: 'google',
   };
 });
 
@@ -30,16 +31,16 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     const mockOnLocationSelected = jest.fn();
     await render(<MapLocationPicker onLocationSelected={mockOnLocationSelected} />);
 
-    expect(screen.getByText(/Abrir Mapa/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Abrir Mapa/i })).toBeTruthy();
   });
 
   it('debe propagar las coordenadas al confirmar la ubicación manualmente', async () => {
     const mockOnLocationSelected = jest.fn();
     await render(<MapLocationPicker onLocationSelected={mockOnLocationSelected} />);
 
-    fireEvent.press(screen.getByText(/Abrir Mapa/i));
+    fireEvent.press(screen.getByRole('button', { name: /Abrir Mapa/i }));
 
-    const confirmButton = await screen.findByText(/Confirmar ubicación/i);
+    const confirmButton = await screen.findByRole('button', { name: /Confirmar ubicación/i });
     fireEvent.press(confirmButton);
 
     expect(mockOnLocationSelected).toHaveBeenCalledTimes(1);
@@ -61,9 +62,9 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     });
 
     await render(<MapLocationPicker onLocationSelected={mockOnLocationSelected} />);
-    fireEvent.press(screen.getByText(/Abrir Mapa/i));
+    fireEvent.press(screen.getByRole('button', { name: /Abrir Mapa/i }));
 
-    const gpsButton = await screen.findByText(/Usar mi ubicación actual/i);
+    const gpsButton = await screen.findByRole('button', { name: /Usar mi ubicación actual/i });
     fireEvent.press(gpsButton);
 
     await waitFor(() => {
@@ -71,7 +72,7 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
       expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(1);
     });
 
-    const confirmButton = await screen.findByText(/Confirmar ubicación/i);
+    const confirmButton = await screen.findByRole('button', { name: /Confirmar ubicación/i });
     fireEvent.press(confirmButton);
 
     expect(mockOnLocationSelected).toHaveBeenCalledWith(
@@ -88,9 +89,9 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     (Location.requestForegroundPermissionsAsync as jest.Mock).mockResolvedValue({ status: 'denied' });
     
     await render(<MapLocationPicker onLocationSelected={mockOnLocationSelected} />);
-    fireEvent.press(screen.getByText(/Abrir Mapa/i));
+    fireEvent.press(screen.getByRole('button', { name: /Abrir Mapa/i }));
 
-    const gpsButton = await screen.findByText(/Usar mi ubicación actual/i);
+    const gpsButton = await screen.findByRole('button', { name: /Usar mi ubicación actual/i });
     fireEvent.press(gpsButton);
 
     await waitFor(() => {
@@ -99,7 +100,7 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     });
 
     // Validar fallback manual: la app no crashea, y permite confirmar
-    const confirmButton = await screen.findByText(/Confirmar ubicación/i);
+    const confirmButton = await screen.findByRole('button', { name: /Confirmar ubicación/i });
     fireEvent.press(confirmButton);
 
     expect(mockOnLocationSelected).toHaveBeenCalledTimes(1);
@@ -112,9 +113,9 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     (Location.getCurrentPositionAsync as jest.Mock).mockRejectedValue(new Error('Location unavailable'));
 
     await render(<MapLocationPicker onLocationSelected={mockOnLocationSelected} />);
-    fireEvent.press(screen.getByText(/Abrir Mapa/i));
+    fireEvent.press(screen.getByRole('button', { name: /Abrir Mapa/i }));
 
-    const gpsButton = await screen.findByText(/Usar mi ubicación actual/i);
+    const gpsButton = await screen.findByRole('button', { name: /Usar mi ubicación actual/i });
     fireEvent.press(gpsButton);
 
     await waitFor(() => {
@@ -123,10 +124,20 @@ describe('MapLocationPicker (F02 Tarea 9 y 10 - Fase RED)', () => {
     });
 
     // Validar fallback manual: la app no crashea, y permite confirmar (con coords previas o default)
-    const confirmButton = await screen.findByText(/Confirmar ubicación/i);
+    const confirmButton = await screen.findByRole('button', { name: /Confirmar ubicación/i });
     fireEvent.press(confirmButton);
 
     expect(mockOnLocationSelected).toHaveBeenCalledTimes(1);
+  });
+
+  // NUEVOS TESTS - TAREA 3 (GOOGLE MAPS)
+  it('debe configurar explícitamente Google Maps como proveedor', async () => {
+    await render(<MapLocationPicker onLocationSelected={jest.fn()} />);
+    fireEvent.press(screen.getByRole('button', { name: /Abrir Mapa/i }));
+
+    const mapView = await screen.findByTestId('map-view');
+    // El mapa debe forzar el provider a "google" (PROVIDER_GOOGLE) para no caer en Apple Maps por defecto en iOS
+    expect(mapView.props.provider).toBe('google');
   });
 });
 

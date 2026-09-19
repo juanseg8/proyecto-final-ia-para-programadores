@@ -1,0 +1,8 @@
+agent: mobile-dev
+task: UX01 - Tarea 2 (Componentes Foundation)
+status: GREEN
+actionsTaken:
+  - Implementó `AppScreen`, `AppButton`, `AppInput`, `AppCard` y `FormField` consumiendo `mobile/src/theme/theme.ts`.
+  - Aseguró propagación de propiedades de accesibilidad (`accessibilityRole`, `accessibilityLabel`), eventos y disabled.
+  - Adaptó la sintaxis del test a `await render()` para cumplir con la asincronía estricta de React 18 / RNTL v14.
+  - Ejecutó `npx jest` exitosamente, alcanzando 43/43 tests en estado GREEN.

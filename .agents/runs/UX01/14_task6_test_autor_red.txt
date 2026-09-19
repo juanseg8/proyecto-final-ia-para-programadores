@@ -1,0 +1,7 @@
+agent: test-autor
+task: UX01 - Tarea 6 (Home)
+status: RED
+actionsTaken:
+  - Modificó `mobile/__tests__/HomeScreen.test.tsx` para exigir requerimientos del Mockup: Hero Card, Avatar "JP", tarjeta "Próximamente" con texto "Indicadores".
+  - Reforzó invariante: la opción "Indicadores" DEBE ser inactiva (no dispara navegación).
+  - Test falló (RED) porque la UI actual era simplemente "Bienvenido test@test.com" sin diseño ni tarjetas.

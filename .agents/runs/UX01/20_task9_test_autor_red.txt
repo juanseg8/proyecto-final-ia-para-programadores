@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01 - Tarea 9 (MapLocationPicker)
+status: RED
+actionsTaken:
+  - Modificó `mobile/__tests__/MapLocationPicker.test.tsx` para forzar el uso de `AppButton`.
+  - Reemplazó `getByText` genéricos por `getByRole('button', { name: ... })` exigiendo accesibilidad para "Abrir Mapa", "Confirmar ubicación" y "Usar mi ubicación actual".
+  - Preservó rigurosamente los tests lógicos sobre la aceptación/rechazo de GPS mediante mocks de expo-location.
+  - Ejecutó `npx jest` evidenciando fallos semánticos sobre la vista original (estado RED esperado).

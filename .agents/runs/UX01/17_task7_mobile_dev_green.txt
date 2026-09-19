@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01 - Tarea 7 (Mis establecimientos)
+status: GREEN
+actionsTaken:
+  - Refactorizó `EstablishmentListScreen` utilizando `AppScreen`, `AppCard` y el componente estandarizado `EmptyState`.
+  - Aseguró accesibilidad con `accessibilityRole="button"` en las Action Cards de la lista.
+  - Implementó un placeholder de color sólido de superficie secundaria en lugar de `imageUrl`, cumpliendo con la regla de no alterar el modelo Backend.
+  - Omitió funcionalidades exploratorias (Tabs "Mapa/Favoritos").
+  - Ejecutó `npx jest` arrojando éxito en la suite de listado (estado GREEN).

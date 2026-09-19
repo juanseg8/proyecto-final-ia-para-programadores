@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 4 (Foundation + idioma)
+status: RED
+actionsTaken:
+  - Reestructuró completamente la suite `mobile/__tests__/components.test.tsx`.
+  - Agregó aserciones sobre `accessibilityRole` y `accessibilityState` para `AppButton`, `AppInput`, `AppCard`, `AppHeader` y `ConfirmDialog`.
+  - Exigió aserciones de idioma estricto en español para los valores por defecto de la Foundation ("Cargando...", "Aceptar", "Cancelar", "No hay datos disponibles").
+  - Provocó falla controlada (element type invalid / fallos de exportación y fallos de aserción semántica).

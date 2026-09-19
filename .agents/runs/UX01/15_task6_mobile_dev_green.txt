@@ -1,0 +1,8 @@
+agent: mobile-dev
+task: UX01 - Tarea 6 (Home)
+status: GREEN
+actionsTaken:
+  - Refactorizó `HomeScreen` utilizando `AppScreen`, `AppCard` y `AppButton`.
+  - Aplicó la jerarquía visual del mockup: Avatar "JP", Hero Card ("¡Buen día!...").
+  - Configuró la sección "Accesos Rápidos" y aseguró explícitamente que la tarjeta "Próximamente / Indicadores" no detone navegación.
+  - Ejecutó `npx jest` con 54/54 tests en estado GREEN.

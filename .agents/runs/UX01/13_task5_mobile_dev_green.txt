@@ -1,0 +1,8 @@
+agent: mobile-dev
+task: UX01 - Tarea 5 (Login + Register)
+status: GREEN
+actionsTaken:
+  - Refactorizó `LoginScreen` y `RegisterScreen` eliminando UI nativa cruda.
+  - Reemplazó por `AppScreen`, `FormField`, `AppInput` y `AppButton` inyectando propiedades label/accessibilityLabel para cumplir el exigente contrato del test QA.
+  - Aseguró la preservación íntegra del microtask y enrutado del AuthContext.
+  - Ejecutó `npx jest` con todos los test en fase GREEN, consolidando la adopción visual.

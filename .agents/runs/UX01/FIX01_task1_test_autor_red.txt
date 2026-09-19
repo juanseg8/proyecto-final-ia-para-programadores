@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 1 (Navegación + Auto Refresh)
+status: RED
+actionsTaken:
+  - Creó la suite `mobile/__tests__/EstablishmentNavigationRefresh.test.tsx`.
+  - Simuló flujos asíncronos para aislar y evidenciar el error de "The action 'NAVIGATE' with payload..." causado por una referencia de ruteo errónea en el botón de Editar.
+  - Implementó pruebas que exigen actualización de la lista sin salir de la vista (refetch al volver de CREATE y DELETE) fallando debido al `useEffect` estático (dependencia []) actual.
+  - Ejecutó `npx jest` logrando la falla controlada (RED) requerida para la Tarea 1 de fix.

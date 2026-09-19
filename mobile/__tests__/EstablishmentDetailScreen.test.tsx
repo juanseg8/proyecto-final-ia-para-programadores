@@ -17,6 +17,7 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({
     params: { id: 'est-123' },
   }),
+  useFocusEffect: jest.fn((cb) => { require('react').useEffect(cb, []); }),
 }));
 
 // Mock api client
@@ -34,13 +35,7 @@ describe('EstablishmentDetailScreen', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(Alert, 'alert').mockImplementation((title, message, buttons) => {
-      // Find the confirm button (usually the one with style 'destructive' or text 'Eliminar') and press it
-      const confirmButton = buttons?.find(b => b.style === 'destructive' || b.text === 'Eliminar' || b.text === 'Sí');
-      if (confirmButton && confirmButton.onPress) {
-        confirmButton.onPress();
-      }
-    });
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   });
 
   describe('Invariantes', () => {
@@ -52,10 +47,13 @@ describe('EstablishmentDetailScreen', () => {
       await waitFor(() => {
         expect(apiClient.get).toHaveBeenCalledWith('/establishments/est-123');
         expect(mockGoBack).toHaveBeenCalled();
-        expect(Alert.alert).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.stringContaining('No tienes permiso')
-        );
+        
+        // Exige limpieza total de tecnicismos
+        const alertCalls = (Alert.alert as jest.Mock).mock.calls;
+        expect(alertCalls.length).toBeGreaterThan(0);
+        const [title, message] = alertCalls[0];
+        expect(title).not.toMatch(/404|status|id|error/i);
+        expect(message).not.toMatch(/404|status|id/i);
       });
     });
 
@@ -70,22 +68,28 @@ describe('EstablishmentDetailScreen', () => {
       const deleteBtn = await screen.findByText('Eliminar');
       fireEvent.press(deleteBtn);
 
+      const cancelBtn = await screen.findByText('Cancelar');
+      expect(cancelBtn).toBeTruthy();
+
+      const allDeleteBtns = screen.getAllByText('Eliminar');
+      fireEvent.press(allDeleteBtns[allDeleteBtns.length - 1]);
+
       await waitFor(() => {
         expect(apiClient.delete).toHaveBeenCalledWith('/establishments/est-123');
-        // No debe haber navegado hacia atrás porque falló
         expect(mockGoBack).not.toHaveBeenCalled();
-        expect(Alert.alert).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.stringContaining('No tienes permiso')
-        );
+        
+        // Exige limpieza total de tecnicismos
+        const alertCalls = (Alert.alert as jest.Mock).mock.calls;
+        const [, message] = alertCalls[alertCalls.length - 1];
+        expect(message).not.toMatch(/404|status|id/i);
       });
     });
   });
 
   describe('Criterios de Aceptación (Fase RED)', () => {
-    it('1. Renderizado: Carga los datos del establecimiento y los visualiza', async () => {
+    it('1. Renderizado: Exige lectura jerárquica de la entidad (Localidad, Provincia) y XX ha', async () => {
       (apiClient.get as jest.Mock).mockResolvedValueOnce({
-        data: { id: 'est-123', name: 'La Margarita', province: 'Buenos Aires', superficieHa: 500 }
+        data: { id: 'est-123', name: 'La Margarita', locality: 'Tandil', province: 'Buenos Aires', superficieHa: 500 }
       });
 
       await render(<EstablishmentDetailScreen />);
@@ -93,8 +97,10 @@ describe('EstablishmentDetailScreen', () => {
       await waitFor(() => {
         expect(apiClient.get).toHaveBeenCalledWith('/establishments/est-123');
         expect(screen.getByText('La Margarita')).toBeTruthy();
-        expect(screen.getByText('Buenos Aires')).toBeTruthy();
-        expect(screen.getByText('500')).toBeTruthy();
+        
+        // Lectura jerárquica
+        expect(screen.getByText('Tandil, Buenos Aires')).toBeTruthy();
+        expect(screen.getByText('500 ha')).toBeTruthy();
       });
     });
 
@@ -111,7 +117,7 @@ describe('EstablishmentDetailScreen', () => {
       expect(mockNavigate).toHaveBeenCalledWith('EstablishmentForm', { id: 'est-123' });
     });
 
-    it('3. Eliminación: Muestra warning, llama a apiClient.delete y navega a listado', async () => {
+    it('3. Eliminación: Muestra warning, exige botones Eliminar y Cancelar, llama a apiClient y navega', async () => {
       (apiClient.get as jest.Mock).mockResolvedValueOnce({
         data: { id: 'est-123', name: 'La Margarita' }
       });
@@ -121,6 +127,15 @@ describe('EstablishmentDetailScreen', () => {
 
       const deleteBtn = await screen.findByText('Eliminar');
       fireEvent.press(deleteBtn);
+
+      // Exigir textos del diálogo exactos
+      expect(await screen.findByText('Cancelar')).toBeTruthy();
+      
+      const allDeleteBtns = screen.getAllByText('Eliminar');
+      expect(allDeleteBtns.length).toBeGreaterThanOrEqual(2);
+      
+      // Confirmamos eliminación
+      fireEvent.press(allDeleteBtns[allDeleteBtns.length - 1]);
 
       await waitFor(() => {
         expect(apiClient.delete).toHaveBeenCalledWith('/establishments/est-123');

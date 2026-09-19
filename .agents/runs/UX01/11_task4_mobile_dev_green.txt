@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01 - Tarea 4 (Navegación Visual)
+status: GREEN
+actionsTaken:
+  - Implementó `BottomNav` y `AppHeader` en `mobile/src/components`.
+  - Aseguró por código que las restricciones de negocio se respetaran (no renderizó pestañas de features inexistentes como Indicadores).
+  - Estilizó el Header y la barra inferior mediante tokens de `theme.ts`.
+  - Solucionó y estabilizó warnings de act() en la suite de test.
+  - Ejecutó `npx jest` arrojando un total de 52/52 pruebas aprobadas (estado GREEN general).

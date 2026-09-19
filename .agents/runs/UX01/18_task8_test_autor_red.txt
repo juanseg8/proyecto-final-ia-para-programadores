@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01 - Tarea 8 (Formulario + Detalle)
+status: RED
+actionsTaken:
+  - Modificó `EstablishmentFormScreen.test.tsx` cambiando `getByPlaceholderText` a `getByLabelText` para exigir la nueva jerarquía de `FormField`.
+  - Protegió y consolidó contract payload exacto (`name`, `province`, `locality`, `superficieHa`), prohibiendo aliases como `surface`.
+  - Modificó `EstablishmentDetailScreen.test.tsx` exigiendo `ConfirmDialog` oficial en lugar del viejo `Alert.alert` nativo, buscando los textos y botones internos del modal de eliminación.
+  - Ejecutó `npx jest` evidenciando fallo controlado (Unable to find element with label... Unable to find modal...) confirmando el RED.

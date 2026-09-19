@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 2 (GeoRef Service + Provincia/Localidad)
+status: RED
+actionsTaken:
+  - Creó la abstracción de test para el nuevo servicio en `mobile/__tests__/georefService.test.ts`.
+  - Creó el stub en `mobile/src/services/georefService.ts` vacío para fallar (fase RED).
+  - Modificó `EstablishmentFormScreen.test.tsx` inyectando aserciones estrictas de selectores (`province-selector`, `locality-selector`), dependencia de campos (disable), limpieza en cascada, reintentos ante error de red y validación estricta de DTO (cero envío de IDs al API client).
+  - Ejecución de la suite comprobando falla controlada debido a la falta de implementación de los selectores y el servicio.

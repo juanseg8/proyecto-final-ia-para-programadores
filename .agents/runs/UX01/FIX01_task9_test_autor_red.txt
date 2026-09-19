@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 9 (Detalle + Delete)
+status: RED
+actionsTaken:
+  - Validó las alertas del error 404 (INV-05) exigiendo la erradicación del título técnico "Error".
+  - Agregó aserciones estrictas de jerarquía visual (el texto debe ser un bloque `"Localidad, Provincia"` y `"XX ha"`).
+  - Obligó a que el flujo de borrado (DELETE) pase por un Modal/Dialog donde los botones de respuesta se llamen explícitamente "Eliminar" y "Cancelar".
+  - Corrió la suite logrando múltiples fallas debido al mismatch visual (la UI actual separa localidad y provincia, no expone el modal configurado, y muestra tecnicismos en las alertas).

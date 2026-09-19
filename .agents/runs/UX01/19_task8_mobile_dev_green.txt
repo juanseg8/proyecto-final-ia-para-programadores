@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01 - Tarea 8 (Formulario + Detalle)
+status: GREEN
+actionsTaken:
+  - Aplicó UI Foundation en `EstablishmentFormScreen.tsx` usando `FormField` y proveyendo accesibilidad y labels requeridos sin arruinar payload (protegió `superficieHa` y rechazó mutations no autorizadas).
+  - Aplicó UI Foundation en `EstablishmentDetailScreen.tsx` usando `AppScreen`, `AppCard` y estandarizó la confirmación destructiva.
+  - Reemplazó `Alert.alert()` por `<ConfirmDialog>` de la Foundation e integró sus callbacks de confirm y cancel.
+  - Protegió el manejo del 404 para INV-05.
+  - Ejecutó `npx jest` con resultados óptimos (Fase GREEN) garantizando pureza en DTO y vista.

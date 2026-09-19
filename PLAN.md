@@ -1,57 +1,50 @@
-# PLAN de Ejecución: F02 — Establecimiento y ubicación
+# PLAN FINAL — UX01-FIX01
 
-**Feature Spec:** `specs/features/F02-Establecimiento.md`
-**Invariantes:** INV-05
+*Corrección de fidelidad visual y consistencia funcional móvil con TDD estricto por tarea.*
 
-*Nota: Estructura TDD estricta (test-autor -> RED -> dev -> GREEN) por bloque funcional.*
+## Reglas Obligatorias
+- **Fidelidad visual:** mockup > interpretación libre.
+- **Funcionalidad:** spec F01/F02 > mockup.
+- **Hard Delegation:** `test-autor` -> RED -> `mobile-dev` -> GREEN. `mobile-dev` NO modifica tests. Si hay defecto, reporta al orquestador.
 
-## Tarea 1 — Modelo Establishment + Migración
-- `[x]` **test-autor:** RED tests para entidad, ManyToOne User, userId obligatorio, campos completos y UNIQUE(userId, normalizedName).
-- `[x]` **backend-dev:** Implementar entidad, relación, migración, índices. Ejecutar tests, migration run/revert/run hasta GREEN.
+## Fase 1: Regresiones Funcionales (TDD RED)
+- `[x]` Tarea 1 — Navegación + Auto Refresh
+  - `test-autor`: RED para error NAVIGATE actual, CREATE actualiza listado, UPDATE actualiza detalle/listado, DELETE actualiza listado. Regresos correctos tras operaciones. No usar hacks de setTimeout.
+  - `mobile-dev`: GREEN con sincronización consistente.
+- `[x]` Tarea 2 — GeoRef Service + Provincia/Localidad
+  - `test-autor`: RED para carga/selección de provincia, selectores dependientes (limpieza), estados (loading/error/retry), payloads conservan string puro. Mocks de red.
+  - `mobile-dev`: GREEN. Abstracción `mobile/src/services/georefService.ts`.
 
-## Tarea 2 — Crear y listar establecimientos
-- `[x]` **test-autor:** RED tests para POST (201, 400 por campos inyectados o inválidos, 409 duplicados) y GET (solo propios, sin exponer ownership manipulable).
-- `[x]` **backend-dev:** Implementar DTOs, normalización, service, controller. GREEN.
+## Fase 2: Configuración Mapas y UI Foundation (TDD RED)
+- `[x]` Tarea 3 — Google Maps
+  - `test-autor`: RED de comportamiento GPS, marcadores, fallbacks manuales.
+  - `mobile-dev`: GREEN conservando lógica `react-native-maps`, usando `PROVIDER_GOOGLE`, separando API keys seguras.
+- `[x]` Tarea 4 — Foundation + idioma
+  - `test-autor`: RED semántico (AppButton, AppInput, roles, labels, disabled, etc.) comprobando textos en español. Sin snapshots gigantes.
+  - `mobile-dev`: GREEN consolidando los componentes.
 
-## Tarea 3 — Detalle + INV-05
-- `[x]` **test-autor:** RED tests para GET /:id (200 propio, 404 ajeno/inexistente, 401 unauth).
-- `[x]` **backend-dev:** Implementar. GREEN.
+## Fase 3: Refactor Visual y Mockup (TDD RED)
+- `[x]` Tarea 5 — Login + Register
+  - `test-autor`: RED protegiendo auth, flujos, errores, roles y textos en español.
+  - `mobile-dev`: GREEN acercando visualmente ambas pantallas al mockup (branding, anchos, jerarquía, inputs, CTA).
+- `[x]` Tarea 6 — Home + navegación principal
+  - `test-autor`: RED protegiendo navegación permitida, saludo y Bottom Nav puro sin F03+.
+  - `mobile-dev`: GREEN aplicando Mockup (avatar dinámico "Juan Pérez -> JP", fallback seguro, Hero Card decorativa, layout).
+- `[x]` Tarea 7 — Mis establecimientos
+  - `test-autor`: RED protegiendo empty state, lectura, creación y DTO (`superficieHa`). Sin fotos de Backend.
+  - `mobile-dev`: GREEN con fidelidad visual (Cards, iconos, placeholder visual sin imageUrl).
+- `[x]` Tarea 8 — Formulario
+  - `test-autor`: RED para endpoints, selectores GeoRef, mapa, GPS y payload canónico intacto.
+  - `mobile-dev`: GREEN implementando jerarquía visual, selects y mapas coherentes.
+- `[x]` Tarea 9 — Detalle + Delete
+  - `test-autor`: RED para lectura de detalle, INV-05, ConfirmDialog de borrado y regresos de ruta.
+  - `mobile-dev`: GREEN para jerarquía visual (ubicación, superficie, Editar vs Eliminar destructivo).
 
-## Tarea 4 — Edición + INV-05
-- `[x]` **test-autor:** RED tests para PUT /:id (edición válida, renombre con 409, campos prohibidos 400, ajeno/inexistente 404).
-- `[x]` **backend-dev:** Implementar. GREEN.
-
-## Tarea 5 — Eliminación física + INV-05
-- `[x]` **test-autor:** RED tests para DELETE /:id (físico, GET posterior 404, ajeno/inexistente 404, sin soft delete).
-- `[x]` **backend-dev:** Implementar. GREEN.
-
-## Tarea 6 — Gate Backend F02
-- `[x]` Ejecutar `npm test`, `npm run test:e2e`, `npm run test:cov`, `npm run build`. Verificar migraciones UP/DOWN. 100% GREEN.
-
-## Tarea 7 — Mobile: navegación y listado
-- `[x]` **test-autor:** RED tests para Home -> Mis establecimientos, estado vacío, navegación.
-- `[x]` **mobile-dev:** Implementar (sin mapa/GPS todavía). GREEN.
-
-## Tarea 8 — Mobile: formulario básico
-- `[x]` **test-autor:** RED tests para campos básicos, payload limpio (sin userId), manejo 400/409.
-- `[x]` **mobile-dev:** Implementar formulario. GREEN.
-
-## Tarea 9 — Mobile: ubicación mediante mapa
-- `[x]` **test-autor:** RED tests agnósticos para selección de punto, marcador editable y coordenadas en form.
-- `[x]` **mobile-dev:** Implementar mapa (decisión técnica interna). GREEN.
-
-## Tarea 10 — Mobile: GPS y permisos
-- `[x]` **test-autor:** RED tests para flujo concedido, flujo denegado (no bloqueante), y manejo de error.
-- `[x]` **mobile-dev:** Implementar. GREEN.
-
-## Tarea 11 — Mobile: detalle, edición y eliminación
-- `[x]` **test-autor:** RED tests para detalle, actualización, warning DELETE y retorno a lista.
-- `[x]` **mobile-dev:** Implementar lógica cruzada con form preexistente. GREEN.
-
-## Tarea 12 — Gate Mobile
-- `[x]` Ejecutar tests, tsc, lint y/o expo checks reales configurados.
-
-## Tarea 13 — Auditoría independiente
-- `[x]` `invoke_subagent(spec-verificador)`: Auditoría integral F02 vs spec y ACs.
-- `[x]` `invoke_subagent(revisor-seguridad)`: Auditoría INV-05 en DB y Controllers.
-- `[x]` (Ambos deben reportar PASS verificable, sin bloqueos ni features falsas).
+## Fase 4: Gates y Auditoría
+- `[ ]` Tarea 10 — Gate Mobile
+  - `orquestador`: Ejecutar `npx jest` y `npx tsc --noEmit`. Todo F01/F02 + UX01 en GREEN.
+- `[ ]` Tarea 11 — Visual Fidelity Gate
+  - `USER`: DETENER automatización. Validación manual con capturas reales vs mockup oficial.
+- `[ ]` Tarea 12 — Auditoría Final
+  - `spec-verificador`: Revisar mockup vs implementación vs Specs.
+  - `revisor-seguridad`: Comprobar que no haya regresiones (Auth, INV-05, Config maps, DTO).

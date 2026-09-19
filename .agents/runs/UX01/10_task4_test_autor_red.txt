@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01 - Tarea 4 (Navegación Visual)
+status: RED
+actionsTaken:
+  - Creó pruebas en `mobile/__tests__/navigation.test.tsx` para `BottomNav` y `AppHeader`.
+  - Aseguró por aserción semántica que la pestaña "Indicadores" no se encuentre en el documento, protegiendo la app contra desbordes funcionales al futuro F04.
+  - Aseguró la existencia de las pestañas "Inicio" y "Establecimientos", y sus correspondientes callbacks de navegación.
+  - Generó stubs para `BottomNav` y `AppHeader`.
+  - Ejecutó `npx jest` arrojando error de renderizado en los stubs (RED esperado).

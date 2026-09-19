@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 6 (Home + Navegación principal)
+status: RED
+actionsTaken:
+  - Modificó `HomeScreen.test.tsx` inyectando estado de `AuthContext` manipulado.
+  - Test explícito del avatar dinámico: Exige que el `name="Carlos Gómez"` renderice el texto "CG".
+  - Test explícito para prohibir falsas navegaciones funcionales al nodo futuro de "Indicadores".
+  - Verificaciones de presencia de "Cerrar sesión" y su anclaje lógico intacto hacia la limpieza del contexto.
+  - Ejecutó suite forzando fallas, evidenciando carencia de implementación visual dinámica en la UI principal.

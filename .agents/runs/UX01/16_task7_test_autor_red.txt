@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01 - Tarea 7 (Mis establecimientos)
+status: RED
+actionsTaken:
+  - Robusteció aserciones asíncronas en `mobile/__tests__/EstablishmentListScreen.test.tsx`.
+  - Aseguró por test que se renderice el `EmptyState` oficial (falla si se muestra texto suelto sin el wrapper apropiado).
+  - Verificó mediante roles accesibles que las filas de establecimientos operen como botones/cards accionables que contienen los textos completos requeridos (`locality`, `province`, `superficieHa`).
+  - No exigió imágenes de back-end (acato de restricción).
+  - Test falló (RED esperado) comprobando la obsolescencia visual del viejo layout.

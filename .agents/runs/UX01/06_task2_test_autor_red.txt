@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01 - Tarea 2 (Componentes Foundation)
+status: RED
+actionsTaken:
+  - Creó `mobile/__tests__/components.test.tsx`.
+  - Diseñó pruebas de comportamiento semántico: propagación de children para AppCard/AppScreen, callbacks (onPress/onChangeText) para AppButton/AppInput, bloqueos con prop "disabled" y aserciones de roles accesibles.
+  - Omitió snapshots y tests frágiles de color/píxeles.
+  - La ejecución de Jest falló explícitamente debido a la falta de exportaciones en `mobile/src/components/` (estado RED).

@@ -1,0 +1,9 @@
+agent: mobile-dev y test-autor
+task: UX01-FIX01 - Tarea 2 (GeoRef Service + Provincia/Localidad)
+status: GREEN
+actionsTaken:
+  - `mobile-dev` completó la implementación del servicio `georefService.ts` consultando la API gubernamental.
+  - `mobile-dev` conectó `EstablishmentFormScreen.tsx` usando selectores y dependencias (localidad deshabilitada sin provincia).
+  - El DTO se mantuvo como string estricto sin filtración de IDs.
+  - `test-autor` arregló la fragilidad de los selectores asíncronos y los touchables utilizando enfoques seguros (`act(...)` wraps, búsqueda por display value y alcance al parentNode para clics).
+  - La suite general alcanzó el 100% GREEN garantizando un formulario de selección de origen argentino impecable.

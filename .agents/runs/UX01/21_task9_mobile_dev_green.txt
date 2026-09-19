@@ -1,0 +1,8 @@
+agent: mobile-dev
+task: UX01 - Tarea 9 (MapLocationPicker)
+status: GREEN (Refactor Visual)
+actionsTaken:
+  - Sustituyó `<Button>` crudos por `<AppButton>` de la UI Foundation.
+  - Implementó tokens de espaciado y estilos desde `theme.ts`.
+  - Mantuvo INTACTA la lógica funcional del GPS, `react-native-maps`, estados y callbacks.
+  - Comprobó 5/5 pruebas exitosas mediante `npx jest` (estado GREEN confirmado).

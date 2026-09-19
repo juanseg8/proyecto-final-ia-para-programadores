@@ -1,0 +1,7 @@
+agent: test-autor
+task: UX01 - Tarea 1 (Design Tokens)
+status: RED
+actionsTaken:
+  - Creó `mobile/__tests__/theme.test.ts`.
+  - Implementó aserciones estructurales para garantizar la existencia de `colors`, `typography`, `spacing` y `radius` usando properties (`toHaveProperty`), evitando fragilidad (no hay hex codes harcodeados).
+  - La suite de jest reportó error de módulo no encontrado (RED legítimo).

@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 4 (Foundation + idioma)
+status: GREEN
+actionsTaken:
+  - Exportó correctamente `ConfirmDialog` y `EmptyState` desde el `index.ts`.
+  - Refactorizó `AppButton` para propagar `loading` nativo, emitiendo el string "Cargando..." cuando aplica.
+  - Sincronizó `accessibilityRole` a los distintos componentes y mapeó la propiedad `disabled` a `accessibilityState`.
+  - Inyectó textos en español por defecto para `ConfirmDialog` y `EmptyState` ("Aceptar", "Cancelar", "No hay datos disponibles").
+  - Test suite alcanzada en GREEN absoluto (components.test.tsx: PASS).

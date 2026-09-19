@@ -1,0 +1,7 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 3 (Google Maps)
+status: RED
+actionsTaken:
+  - Validó las invariantes preexistentes de GPS (permisos denegados, fallos de ubicación, fallback manual intacto).
+  - Agregó test explícito exigiendo que `MapView` de `react-native-maps` reciba la prop `provider="google"` simulada a través de la exportación `PROVIDER_GOOGLE`.
+  - Ejecutó la suite provocando falla controlada (`Expected: "google", Received: undefined`), evidenciando que el código actual utiliza el provider por defecto del SO (Apple Maps en iOS).

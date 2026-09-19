@@ -1,0 +1,8 @@
+agent: test-autor
+task: UX01 - Tarea 5 (Login + Register)
+status: RED
+actionsTaken:
+  - Modificó `mobile/__tests__/LoginScreen.test.tsx` y `mobile/__tests__/RegisterScreen.test.tsx`.
+  - Reemplazó `getByPlaceholderText` por `getByLabelText` y `getByText` (para botones) por `getByRole('button', { name: ... })`.
+  - Mantuvo la integridad de aserciones de AuthContext.
+  - Provocó un fallo intencional (RED) al no existir etiquetas de accesibilidad ni Labels en la interfaz cruda actual, exigiendo la adopción de los componentes Foundation creados previamente.

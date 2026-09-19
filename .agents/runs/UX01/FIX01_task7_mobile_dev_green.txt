@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 7 (Mis establecimientos)
+status: GREEN
+actionsTaken:
+  - Reestructuró `EstablishmentListScreen.tsx` inyectando la Foundation (`AppScreen`, `AppHeader`, `AppCard`, `EmptyState`).
+  - Corrigió `AppHeader.tsx` para inyectar `accessibilityRole="header"` a nivel del nodo `<Text>`, satisfaciendo el árbol de accesibilidad semántica nativo.
+  - Sorteó con éxito la trampa de proxy (el `imageUrl`), armando un renderizador de placeholder local (`styles.imagePlaceholder`).
+  - Impuso la concatenación exacta del diseño: `"${item.locality}, ${item.province}"` e incluyó el afijo "ha" de manera puramente visual, protegiendo el dato bruto.
+  - La suite `EstablishmentListScreen.test.tsx` arrojó el 100% GREEN.

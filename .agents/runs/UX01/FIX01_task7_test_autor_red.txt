@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 7 (Mis establecimientos)
+status: RED
+actionsTaken:
+  - Agregó aserciones de semántica de accesibilidad para el rol de `header` exigiendo el título "Mis establecimientos".
+  - Forzó aserciones de texto sobre el formato exacto en las Cards ("Localidad, Provincia" y "X ha").
+  - Evaluó el componente `EmptyState` esperando textos nativos en español.
+  - Implementó un Proxy interceptor sobre el DTO de prueba. Si el desarrollador móvil intenta extraer `imageUrl` o campos gráficos inventados del backend, la prueba lanza una excepción (Sandbox de prevención de dependencias).
+  - Ejecutó `npx jest` alcanzando exitosamente un escenario RED por fallos de accesibilidad, fallos de UI local y ausencias del Empty State requerido.

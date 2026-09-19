@@ -1,0 +1,9 @@
+agent: mobile-dev
+task: UX01-FIX01 - Tarea 8 (Formulario)
+status: GREEN
+actionsTaken:
+  - Inyectó `AppHeader` para erradicar títulos del sistema.
+  - Generó agrupación "Ubicación" para amarrar Mapa, GPS y GeoRef bajo una misma estructura tipográfica (`theme.typography.h3`).
+  - Posicionó la etiqueta visual "ha" en paralelo al input numérico.
+  - Mantuvo la protección del DTO estricta: `superficieHa` persiste viajando como `number` bruto al backend.
+  - La suite logró el 100% GREEN (EstablishmentFormScreen).

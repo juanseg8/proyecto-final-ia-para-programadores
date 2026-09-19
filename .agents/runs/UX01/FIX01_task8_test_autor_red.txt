@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 8 (Formulario)
+status: RED
+actionsTaken:
+  - Modificó `EstablishmentFormScreen.test.tsx` con pruebas de jerarquía visual (títulos amigables "Nuevo Establecimiento").
+  - Verificó la existencia semántica de agrupadores estructurales (sección "Ubicación").
+  - Obligó a que exista una unidad de medida visual ("ha") acompañando a la superficie en pantalla.
+  - Aseguró, mediante aserciones blindadas, que el payload sigue siendo intocable (enviando `superficieHa` como Number puro y strings planos para geografía).
+  - Provocó falla controlada (3 fallos visuales, 4 pasados lógicos).

@@ -1,0 +1,9 @@
+agent: test-autor
+task: UX01-FIX01 - Tarea 5 (Login + Register)
+status: RED
+actionsTaken:
+  - Modificó `LoginScreen.test.tsx` y `RegisterScreen.test.tsx` para erradicar selectores vinculados a variables técnicas o textos en inglés.
+  - Implementó búsquedas por placeholder semántico explícito en español ("Correo electrónico", "Contraseña", "Nombre").
+  - Requiere semántica estricta en los botones ("Iniciar sesión", "Crear cuenta").
+  - Mantuvo validada toda la cascada asíncrona de autenticación (`AuthContext`).
+  - Ejecución de la suite logra falla controlada masiva (5 fallos) al detectar que la app actual todavía utiliza los textos "Email", "Password" y nombres técnicos de pantalla.
