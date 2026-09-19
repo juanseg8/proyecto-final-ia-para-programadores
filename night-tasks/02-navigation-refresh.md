@@ -3,24 +3,27 @@
 ## Goal
 Stabilize existing F02 navigation and fresh data after CREATE/UPDATE/DELETE.
 
-## Allowed
-- mobile/**
+## Allowed production area
+- mobile/App.tsx
+- mobile/src/screens/**
+- mobile/src/components/**
+- mobile/src/apiClient.ts
 - NIGHT_REPORT.md
 
 ## Do
-- inspect current App/navigation/screens before editing;
-- fix user-visible technical route names if they leak into UI;
-- preserve canonical F02 routes/payload behavior;
-- ensure CREATE refreshes establishment list;
-- ensure UPDATE refreshes relevant detail/list state;
+- inspect current navigation/screens before editing;
+- preserve canonical F02 payload behavior;
+- ensure CREATE returns to a fresh establishment list;
+- ensure UPDATE refreshes the relevant detail/list state;
 - ensure DELETE returns correctly and list is fresh;
-- reuse existing navigation/refetch patterns;
-- use existing tests as contract.
+- remove user-visible technical route names if present;
+- reuse existing navigation/refetch patterns.
 
 ## Do not
-- invent routes/features;
+- read/edit/create tests;
 - alter backend;
-- introduce timeout hacks;
+- invent routes/features;
+- add timeout hacks;
 - create root src/.
 
-Update only Task 02 in NIGHT_REPORT.md and stop.
+Compile with TypeScript, update Task 02 in NIGHT_REPORT.md, then stop.

@@ -7,14 +7,14 @@
       "name": "Ollama Local",
       "options": {
         "baseURL": "http://localhost:11434/v1",
-        "timeout": 600000
+        "timeout": 900000
       },
       "models": {
-        "qwen2.5-coder:7b": {
-          "name": "Qwen 2.5 Coder 7B"
-        },
         "agro-coder": {
-          "name": "Agro Coder 7B 16K"
+          "name": "Agro Coder - Devstral Small 2 24B"
+        },
+        "qwen3.5:9b": {
+          "name": "Qwen 3.5 9B fallback"
         }
       }
     }

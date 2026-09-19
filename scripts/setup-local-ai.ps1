@@ -9,13 +9,16 @@ if (-not (Get-Command opencode -ErrorAction SilentlyContinue)) {
   throw "OpenCode is not installed or not in PATH."
 }
 
-Write-Host "Pulling base model..."
-ollama pull qwen2.5-coder:7b
+Write-Host "Ollama version:"
+ollama --version
 
-Write-Host "Creating agro-coder with 16K context..."
+Write-Host "Pulling Devstral Small 2 24B..."
+ollama pull devstral-small-2:24b
+
+Write-Host "Creating agro-coder with 8K context..."
 ollama create agro-coder -f local-ai/Modelfile
 
 Write-Host "Available OpenCode models:"
 opencode models
 
-Write-Host "Setup complete. Run the read-only smoke test from local-ai/README.md before NIGHT_BUILD."
+Write-Host "Setup complete."

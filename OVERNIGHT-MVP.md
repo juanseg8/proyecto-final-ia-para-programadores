@@ -1,70 +1,65 @@
-# Agro Intelligence - NIGHT BUILD V2
+# Agro Intelligence - NIGHT BUILD V7
 
-## Purpose
-Run a safe, unattended LOCAL execution with OpenCode + Ollama.
+## Goal
+Make useful product progress overnight with a local coding agent without wasting time on fragile test infrastructure.
 
 The local model is an implementation worker, not a product architect.
 
-## Why V2 exists
-The first unattended run created an invalid root-level `src/` tree and invented architecture.
-V2 prevents that by:
-- using small isolated tasks;
-- allowing only `mobile/**` and `NIGHT_REPORT.md` during the current run;
-- validating changed paths after every task;
-- running TypeScript and Jest gates;
-- committing only from the PowerShell wrapper after GREEN;
-- stopping F03+ until their specs are sufficiently defined.
+## Current scope
+Phase 0: stabilize and improve the existing F01/F02 mobile experience.
 
-## Current unattended scope
-Only Phase 0 - F01/F02 mobile stabilization.
-
-Allowed production path:
-- `mobile/**`
-
-Allowed report:
+Allowed:
+- `mobile/**` production code
 - `NIGHT_REPORT.md`
 
-Forbidden during this run:
+Forbidden:
 - root `src/**`
 - `backend/**`
 - `specs/**`
 - `.agents/**`
 - `.opencode/**`
-- product/domain invention
+- `mobile/__tests__/**`
+- Jest/testing-library configuration
 - new backend contracts
-- F03/F04/F06/F07/F08/F09 implementation
+- invented F03+ domain rules
 
-## Task order
-1. `night-tasks/01-encoding-icons.md`
-2. `night-tasks/02-navigation-refresh.md`
-3. `night-tasks/03-georef-searchable-select.md`
-4. `night-tasks/04-ui-foundation-cleanup.md`
-5. `night-tasks/05-map-sanity.md`
+## Current task order
+1. Task 02 - navigation and fresh data
+2. Task 03 - GeoRef + reusable SearchableSelect
+3. Task 04 - UI foundation cleanup
+4. Task 05 - map code sanity
 
-Each task is a separate OpenCode run with fresh context.
+Encoding cleanup is no longer an autonomous task. It is a one-time maintenance concern.
 
-## Per-task gate
-After each task the wrapper must:
-1. verify no forbidden path was changed;
-2. run `npx tsc --noEmit` in `mobile/`;
-3. run `npx jest --runInBand` in `mobile/`;
-4. commit locally only if GREEN;
-5. stop immediately on a forbidden path or failed gate.
+## Per-task workflow
+For each task:
+1. run a fresh OpenCode session;
+2. inspect only relevant production code;
+3. implement the task;
+4. reject changes outside the allowlist;
+5. run `npx tsc --noEmit` in mobile;
+6. if TypeScript fails, give only compiler errors to compile-repairer;
+7. retry compilation up to 2 times;
+8. if GREEN, create a local commit;
+9. continue to the next task.
 
-## Visual limitation
-The worker cannot declare UX01 visually complete.
-Real screenshots + visual-redteam + human approval remain mandatory.
+No Jest is run in NIGHT_BUILD.
 
-## Feature work after Phase 0
-Do not implement F03+ unattended unless a concrete spec exists.
+## Completion
+A task is code-complete overnight when:
+- paths are valid;
+- TypeScript is GREEN;
+- required behavior is implemented in code;
+- report is updated;
+- local commit exists.
 
-Current state:
-- F01 implemented
-- F02 implemented
-- F05 specified but depends on F04
-- F03/F04/F06/F07/F08/F09 are not sufficiently specified for autonomous implementation
+Visual completion still requires a later real-device/screenshot review.
 
-A missing spec is a BLOCKER, not permission to invent.
+## F03+
+Do not implement F03/F04/F06/F07/F08/F09 until each has a sufficiently concrete spec.
+Missing spec = blocker, not permission to invent.
+
+F05 is specified but depends on F04.
 
 ## Git
 Never push.
