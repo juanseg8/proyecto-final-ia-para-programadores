@@ -1,27 +1,34 @@
-# Night Task 04 - UI foundation cleanup
+# Task 04 - UI foundation cleanup
+
+## Authoritative spec
+Read exactly:
+- specs/ui/UX01-Design-System.md
+
+## Production files to inspect
+- mobile/src/theme/theme.ts
+- mobile/src/components/AppScreen.tsx
+- mobile/src/components/AppHeader.tsx
+- mobile/src/components/AppButton.tsx
+- mobile/src/components/AppInput.tsx
+- mobile/src/components/AppCard.tsx
+- mobile/src/components/FormField.tsx
+- mobile/src/components/feedback.tsx
+- mobile/src/components/BottomNav.tsx
+- mobile/src/screens/HomeScreen.tsx
+- mobile/src/screens/LoginScreen.tsx
+- mobile/src/screens/RegisterScreen.tsx
+- mobile/src/screens/EstablishmentListScreen.tsx
+- mobile/src/screens/EstablishmentDetailScreen.tsx
+- mobile/src/screens/EstablishmentFormScreen.tsx
 
 ## Goal
-Improve consistency of existing F01/F02 mobile screens without claiming final visual approval.
-
-## Use
-- `specs/ui/UX01-Design-System.md` as read-only guidance;
-- `mobile/src/theme/`;
-- existing AppScreen/AppHeader/AppButton/AppInput/AppCard/FormField/feedback components.
-
-## Do
-- remove obvious duplicated ad-hoc styles where the shared foundation fits;
-- normalize gross spacing/proportions/button hierarchy;
-- ensure visible UI is Spanish;
-- keep destructive actions visually distinct;
+Make F01/F02 mobile visually consistent with UX01:
+- reuse foundation components instead of duplicated ad-hoc UI;
+- normalize spacing/proportions/button hierarchy;
+- Spanish visible text;
+- destructive actions visibly distinct;
 - remove inactive/future UI presented as working;
-- keep functional flows intact.
+- remove Unicode emoji used as production icons;
+- preserve functional flows and backend contracts.
 
-## Do not
-- read/edit tests;
-- perform a speculative full redesign;
-- add fake metrics/photos/features;
-- change backend contracts;
-- declare UX01 visually approved;
-- create root src/.
-
-Compile with TypeScript. Mark HUMAN_SCREENSHOT_REQUIRED in NIGHT_REPORT.md and stop.
+Do not perform a speculative redesign. Do not read/edit tests. Mark HUMAN_SCREENSHOT_REQUIRED in NIGHT_REPORT.md.
