@@ -60,3 +60,11 @@ PROJECT-MAP discipline:
 - Never call Read on a directory such as mobile, mobile/src, backend, backend/src, specs or night-tasks.
 - If an exact listed file does not exist and the task says "crear", create it at that exact path.
 - If an exact listed file unexpectedly does not exist and it is not a create target, record BLOCKED_PATH_MISSING in NIGHT_REPORT.md and stop that task; do not search the repo.
+
+
+Path handling (mandatory):
+- The repository working directory is already the project root.
+- ALWAYS pass repository-relative paths to Read/Edit exactly as written in the task or PROJECT-MAP, e.g. mobile/src/screens/EstablishmentListScreen.tsx.
+- NEVER construct or use absolute Windows paths (C:/... or C:\\...).
+- NEVER rewrite, normalize, abbreviate, or typo the repository folder name.
+- If a relative Read fails, retry once with the exact same relative path copied verbatim from the task/PROJECT-MAP; never convert it to an absolute path.
