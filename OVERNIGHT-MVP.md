@@ -1,68 +1,16 @@
-# Agro Intelligence - NIGHT BUILD V7
+# Agro Intelligence - NIGHT BUILD V8 FULL MVP
 
-## Goal
-Make useful product progress overnight with a local coding agent without wasting time on fragile test infrastructure.
+Objetivo: terminar MVP funcional. El modelo ejecuta specs ya definidas.
 
-The local model is an implementation worker, not a product architect.
+Queue: 02 navegación, 03 GeoRef, 04 UI, 05 mapa, 10 F03 backend, 11 F03 mobile, 12 F04, 13 F05, 14 F06, 15 F07, 16 F08, 17 F09, 18 integración.
 
-## Current scope
-Phase 0: stabilize and improve the existing F01/F02 mobile experience.
+Cada task: leer AGENTS, este archivo, plan, spec relevante y task; implementar; validar paths; compilar área; reparar compile máximo 2; commit local; continuar.
 
-Allowed:
-- `mobile/**` production code
-- `NIGHT_REPORT.md`
+Sin Jest nocturno.
+Backend gate: npm run build.
+Mobile gate: npx tsc --noEmit.
 
-Forbidden:
-- root `src/**`
-- `backend/**`
-- `specs/**`
-- `.agents/**`
-- `.opencode/**`
-- `mobile/__tests__/**`
-- Jest/testing-library configuration
-- new backend contracts
-- invented F03+ domain rules
+Permitido editar backend producción/migrations/package/env example, mobile producción/package/env example, NIGHT_REPORT y README solo task18.
+Prohibido root src, tests, .agents/runs, secretos, push/reset/clean/force.
 
-## Current task order
-1. Task 02 - navigation and fresh data
-2. Task 03 - GeoRef + reusable SearchableSelect
-3. Task 04 - UI foundation cleanup
-4. Task 05 - map code sanity
-
-Encoding cleanup is no longer an autonomous task. It is a one-time maintenance concern.
-
-## Per-task workflow
-For each task:
-1. run a fresh OpenCode session;
-2. inspect only relevant production code;
-3. implement the task;
-4. reject changes outside the allowlist;
-5. run `npx tsc --noEmit` in mobile;
-6. if TypeScript fails, give only compiler errors to compile-repairer;
-7. retry compilation up to 2 times;
-8. if GREEN, create a local commit;
-9. continue to the next task.
-
-No Jest is run in NIGHT_BUILD.
-
-## Completion
-A task is code-complete overnight when:
-- paths are valid;
-- TypeScript is GREEN;
-- required behavior is implemented in code;
-- report is updated;
-- local commit exists.
-
-Visual completion still requires a later real-device/screenshot review.
-
-## F03+
-Do not implement F03/F04/F06/F07/F08/F09 until each has a sufficiently concrete spec.
-Missing spec = blocker, not permission to invent.
-
-F05 is specified but depends on F04.
-
-## Git
-Never push.
-Never force push.
-Never reset --hard.
-Never clean -fd.
+Éxito: Task18 + compile final backend/mobile GREEN.
