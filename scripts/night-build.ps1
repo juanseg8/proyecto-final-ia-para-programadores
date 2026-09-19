@@ -1,6 +1,6 @@
 param(
-  [ValidateSet("01A","01B","02","03","04","05")]
-  [string]$StartFrom = "01A"
+  [ValidateSet("02","03","04","05")]
+  [string]$StartFrom = "02"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,20 +16,11 @@ if (git status --porcelain) {
 }
 
 $tasks = @(
-  @{ Id = "01A"; File = "night-tasks/01a-home-login-encoding.md"; Commit = "night: fix Home and Login encoding"; Tests = @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx") },
-  @{ Id = "01B"; File = "night-tasks/01b-establishment-encoding.md"; Commit = "night: fix establishment screen encoding"; Tests = @("__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/EstablishmentFormScreen.test.tsx","__tests__/RegisterScreen.test.tsx","__tests__/MapLocationPicker.test.tsx") },
   @{ Id = "02"; File = "night-tasks/02-navigation-refresh.md"; Commit = "night: stabilize establishment navigation and refresh"; Tests = @("__tests__/EstablishmentNavigationRefresh.test.tsx","__tests__/navigation.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/EstablishmentFormScreen.test.tsx") },
   @{ Id = "03"; File = "night-tasks/03-georef-searchable-select.md"; Commit = "night: consolidate GeoRef searchable selectors"; Tests = @("__tests__/georefService.test.ts","__tests__/EstablishmentFormScreen.test.tsx","__tests__/components.test.tsx") },
   @{ Id = "04"; File = "night-tasks/04-ui-foundation-cleanup.md"; Commit = "night: normalize mobile UI foundation"; Tests = @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx","__tests__/RegisterScreen.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/components.test.tsx","__tests__/theme.test.ts") },
   @{ Id = "05"; File = "night-tasks/05-map-sanity.md"; Commit = "night: harden map flow code"; Tests = @("__tests__/MapLocationPicker.test.tsx","__tests__/EstablishmentFormScreen.test.tsx") }
 )
-
-$startIndex = -1
-for ($i = 0; $i -lt $tasks.Count; $i++) {
-  if ($tasks[$i].Id -eq $StartFrom) { $startIndex = $i; break }
-}
-if ($startIndex -lt 0) { throw "Unknown StartFrom task: $StartFrom" }
-$tasks = $tasks[$startIndex..($tasks.Count - 1)]
 
 function Get-ChangedPaths([string]$beforeSha) {
   $paths = @()
@@ -43,7 +34,6 @@ function Get-ChangedPaths([string]$beforeSha) {
     if ($p -match " -> ") { $p = ($p -split " -> ")[-1] }
     $paths += $p
   }
-
   return $paths | Where-Object { $_ } | Sort-Object -Unique
 }
 
@@ -78,11 +68,34 @@ function Run-MobileGate([string[]]$testFiles) {
   }
 }
 
-Write-Host "== Agro Intelligence NIGHT BUILD V4 =="
+Write-Host "== Agro Intelligence NIGHT BUILD V5 =="
 Write-Host "Branch: $branch"
 Write-Host "Model: ollama/agro-coder"
-Write-Host "Scope: mobile/ only, one small task per OpenCode run"
-Write-Host "Starting from task: $StartFrom"
+Write-Host "Scope: mobile/ only"
+Write-Host ""
+
+Write-Host "== Deterministic text/encoding cleanup ==" -ForegroundColor Cyan
+& powershell -ExecutionPolicy Bypass -File scripts/fix-mobile-text.ps1
+if ($LASTEXITCODE -ne 0) { throw "Text normalization failed." }
+
+$cleanupPaths = @(git status --porcelain | ForEach-Object { if ($_.Length -ge 4) { $_.Substring(3).Trim() } })
+Assert-AllowedPaths $cleanupPaths
+
+Run-MobileGate @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/RegisterScreen.test.tsx")
+
+git add mobile
+$cleanupStaged = git diff --cached --name-only
+if ($cleanupStaged) {
+  git commit -m "night: normalize mobile text encoding"
+  if ($LASTEXITCODE -ne 0) { throw "Encoding cleanup commit failed." }
+}
+
+$startIndex = -1
+for ($i = 0; $i -lt $tasks.Count; $i++) {
+  if ($tasks[$i].Id -eq $StartFrom) { $startIndex = $i; break }
+}
+if ($startIndex -lt 0) { throw "Unknown StartFrom task: $StartFrom" }
+$tasks = $tasks[$startIndex..($tasks.Count - 1)]
 
 foreach ($task in $tasks) {
   Write-Host ""
@@ -116,7 +129,6 @@ IMPORTANT:
   Run-MobileGate $task.Tests
 
   git add mobile NIGHT_REPORT.md
-
   $staged = git diff --cached --name-only
   if ($staged) {
     git commit -m $task.Commit
@@ -141,5 +153,5 @@ finally {
 }
 
 Write-Host ""
-Write-Host "NIGHT BUILD V4 finished." -ForegroundColor Green
+Write-Host "NIGHT BUILD V5 finished." -ForegroundColor Green
 Write-Host "No push was performed."

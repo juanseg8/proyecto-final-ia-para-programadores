@@ -7,14 +7,7 @@ Model:
 Started:
 Finished:
 
-## Task 01A - Home/Login encoding and icons
-Status: PENDING
-Changes:
-Tests:
-Commit:
-Blockers:
-
-## Task 01B - Establishment encoding and icons
+## Deterministic text/encoding cleanup
 Status: PENDING
 Changes:
 Tests:
