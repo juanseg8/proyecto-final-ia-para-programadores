@@ -33,3 +33,6 @@ Thumbs.db
 
 # Local AI runtime scratch
 .local-ai/
+
+# Aider local runtime/history
+.aider*

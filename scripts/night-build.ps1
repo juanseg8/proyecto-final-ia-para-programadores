@@ -6,51 +6,39 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$branch = git branch --show-current
-if (-not $branch) { throw "Not inside a git repository." }
-if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-refactor") { throw "Use dedicated night-build branch." }
-if (git status --porcelain) { throw "Working tree is not clean." }
+function Fail([string]$message) { throw $message }
 
-Write-Host "NIGHT BUILD mutation probe..." -ForegroundColor Cyan
-
-# Verify the exact mutation mechanism used by production tasks.
-$rewriteProbe = "night-agent-rewrite-probe.txt"
-Set-Content -Path $rewriteProbe -Value "REWRITE_BEFORE" -NoNewline
-
-$rewritePrompt = @"
-Read night-agent-rewrite-probe.txt.
-Then call the custom rewrite_file tool exactly once with:
-path = night-agent-rewrite-probe.txt
-content = REWRITE_OK
-Do not call built-in edit or write. Do not touch any other file. Stop after rewrite_file succeeds.
-"@
-
-& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build mutation probe" $rewritePrompt
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "Probe process failed. Current probe content:" -ForegroundColor Red
-  if (Test-Path $rewriteProbe) { Get-Content $rewriteProbe -Raw }
-  Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
-  throw "OpenCode mutation probe process failed."
+$branch = (git branch --show-current).Trim()
+if (-not $branch) { Fail "Not inside a git repository." }
+if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-refactor") {
+  Fail "Use dedicated night-build branch."
 }
-
-if (-not (Test-Path $rewriteProbe)) {
-  throw "OpenCode removed the mutation probe unexpectedly."
-}
-
-$probeActual = (Get-Content $rewriteProbe -Raw).Trim()
-if ($probeActual -ne "REWRITE_OK") {
-  Write-Host "Expected REWRITE_OK but found: [$probeActual]" -ForegroundColor Red
-  Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
-  throw "Custom rewrite_file probe failed. Night Build stopped before product work."
-}
-
-Remove-Item $rewriteProbe -Force
-
 if (git status --porcelain) {
-  throw "Mutation probe left unexpected repository changes."
+  Fail "Working tree is not clean. Commit/stash/restore changes before Night Build."
 }
 
-Write-Host "MUTATION PROBE GREEN (custom rewrite_file)" -ForegroundColor Green
+if (-not (Get-Command aider -ErrorAction SilentlyContinue)) {
+  Fail @"
+Aider is not installed.
+
+Install once:
+  python -m pip install aider-install
+  aider-install
+
+Then rerun this script.
+"@
+}
+
+if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
+  Fail "Ollama is not installed or not available in PATH."
+}
+
+$ollamaList = (& ollama list 2>&1 | Out-String)
+if ($LASTEXITCODE -ne 0 -or $ollamaList -notmatch "(?m)^agro-coder\s") {
+  Fail "Ollama model 'agro-coder' is not available. Run scripts/setup-local-ai.ps1 first."
+}
+
+$env:OLLAMA_API_BASE = "http://127.0.0.1:11434"
 
 $tasks = @(
   @{ Id="03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
@@ -67,173 +55,278 @@ $tasks = @(
   @{ Id="18"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
 )
 
-function Get-ChangedPaths([string]$before) {
-  $paths=@()
-  $d=git diff --name-only "$before..HEAD"; if($d){$paths+=$d}
-  foreach($line in (git status --porcelain)){
-    if($line.Length -lt 4){continue}
-    $p=$line.Substring(3).Trim()
-    if($p -match " -> "){$p=($p -split " -> ")[-1]}
-    $paths+=$p
+function Get-TaskContext([string]$taskFile) {
+  $lines = Get-Content $taskFile
+  $section = ""
+  $editable = New-Object System.Collections.Generic.List[string]
+  $readOnly = New-Object System.Collections.Generic.List[string]
+
+  $readOnly.Add("AGENTS.md")
+  $readOnly.Add($taskFile)
+
+  foreach ($line in $lines) {
+    if ($line -match '^##\s+Leer') { $section = "read"; continue }
+    if ($line -match '^##\s+Crear') { $section = "create"; continue }
+    if ($line -match '^##\s+') { $section = ""; continue }
+
+    if (($section -eq "read" -or $section -eq "create") -and $line -match '^\s*-\s+(.+?)\s*$') {
+      $path = $Matches[1].Trim().Trim([char]96)
+      if ($path -notmatch '^[A-Za-z0-9_.\-/]+$') { continue }
+
+      $isProduction = $path.StartsWith("backend/") -or $path.StartsWith("mobile/") -or $path -eq "README.md"
+      if ($isProduction) {
+        if (-not $editable.Contains($path)) { $editable.Add($path) }
+      } else {
+        if (-not $readOnly.Contains($path)) { $readOnly.Add($path) }
+      }
+    }
   }
-  return $paths | Where-Object {$_} | Sort-Object -Unique
+
+  return @{ Editable = @($editable); ReadOnly = @($readOnly) }
 }
 
-function Assert-Paths([string[]]$paths,[string]$taskId) {
-  $bad=@()
-  foreach($p in $paths){
-    $n=$p.Replace("\","/")
-    $ok=$n -eq "NIGHT_REPORT.md" -or
+function Get-ChangedPaths([string]$before) {
+  $paths = New-Object System.Collections.Generic.List[string]
+  foreach ($p in @(git diff --name-only $before)) {
+    if ($p) { $paths.Add($p.Trim()) }
+  }
+  foreach ($line in @(git status --porcelain)) {
+    if ($line.Length -lt 4) { continue }
+    $p = $line.Substring(3).Trim()
+    if ($p -match " -> ") { $p = ($p -split " -> ")[-1] }
+    if ($p) { $paths.Add($p) }
+  }
+  return @($paths | Sort-Object -Unique)
+}
+
+function Assert-Paths([string[]]$paths, [string]$taskId) {
+  $bad = @()
+  foreach ($p in $paths) {
+    $n = $p.Replace("\","/")
+    $ok =
+      $n -eq "NIGHT_REPORT.md" -or
       ($n.StartsWith("backend/") -and -not $n.Contains(".spec.ts") -and -not $n.StartsWith("backend/test/")) -or
       ($n.StartsWith("mobile/") -and -not $n.StartsWith("mobile/__tests__/")) -or
       ($taskId -eq "18" -and $n -eq "README.md")
-    if(-not $ok){$bad+=$n}
+    if (-not $ok) { $bad += $n }
   }
-  if($bad.Count -gt 0){
-    $bad | ForEach-Object { Write-Host "FORBIDDEN: $_" -ForegroundColor Red }
-    throw "Forbidden path changed."
+  if ($bad.Count -gt 0) {
+    $bad | ForEach-Object { Write-Host "FORBIDDEN CHANGE: $_" -ForegroundColor Red }
+    Fail "Aider changed files outside the allowed production scope."
   }
 }
 
-function Invoke-Cmd([string]$working,[string]$command) {
+function Has-ProductionChanges([string]$before) {
+  $paths = @(Get-ChangedPaths $before)
+  $prod = @($paths | Where-Object {
+    $n = $_.Replace("\","/")
+    $n.StartsWith("backend/") -or ($n.StartsWith("mobile/") -and -not $n.StartsWith("mobile/__tests__/"))
+  })
+  return $prod.Count -gt 0
+}
+
+function Invoke-Cmd([string]$working, [string]$command) {
   Push-Location $working
   try {
-    $out=@(& cmd.exe /d /s /c "$command 2>&1")
-    $code=$LASTEXITCODE
+    $out = @(& cmd.exe /d /s /c "$command 2>&1")
+    $code = $LASTEXITCODE
     $out | ForEach-Object { Write-Host $_ }
-    return @{Success=($code -eq 0);Output=($out -join [Environment]::NewLine)}
+    return @{ Success = ($code -eq 0); Output = ($out -join [Environment]::NewLine) }
   } finally { Pop-Location }
 }
 
 function Invoke-Gate([string]$gate) {
-  $all=@(); $ok=$true
-  if($gate -eq "backend" -or $gate -eq "both"){
+  $all = @(); $ok = $true
+  if ($gate -eq "backend" -or $gate -eq "both") {
     Write-Host "Backend build..." -ForegroundColor Cyan
-    $r=Invoke-Cmd "backend" "npm run build"
+    $r = Invoke-Cmd "backend" "npm run build"
     $all += "BACKEND:" + [Environment]::NewLine + $r.Output
-    if(-not $r.Success){$ok=$false}
+    if (-not $r.Success) { $ok = $false }
   }
-  if($ok -and ($gate -eq "mobile" -or $gate -eq "both")){
+  if ($ok -and ($gate -eq "mobile" -or $gate -eq "both")) {
     Write-Host "Mobile TypeScript..." -ForegroundColor Cyan
-    $r=Invoke-Cmd "mobile" "npx tsc --noEmit -p tsconfig.night.json"
+    $r = Invoke-Cmd "mobile" "npx tsc --noEmit -p tsconfig.night.json"
     $all += "MOBILE:" + [Environment]::NewLine + $r.Output
-    if(-not $r.Success){$ok=$false}
+    if (-not $r.Success) { $ok = $false }
   }
-  return @{Success=$ok;Output=($all -join [Environment]::NewLine)}
+  return @{ Success = $ok; Output = ($all -join [Environment]::NewLine) }
 }
 
-function Has-ProductionChanges([string]$before) {
-  $paths=@(Get-ChangedPaths $before)
-  return @($paths | Where-Object {
-    $_.Replace("\","/").StartsWith("backend/") -or
-    ($_.Replace("\","/").StartsWith("mobile/") -and -not $_.Replace("\","/").StartsWith("mobile/__tests__/"))
-  }).Count -gt 0
+function New-PromptFile([string]$taskId, [string]$body) {
+  $dir = Join-Path $env:TEMP "agro-night-build"
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $file = Join-Path $dir "task-$taskId-$([Guid]::NewGuid().ToString('N')).txt"
+  [System.IO.File]::WriteAllText($file, $body, [System.Text.UTF8Encoding]::new($false))
+  return $file
 }
 
-function Invoke-TaskAgent([hashtable]$task,[string]$taskText,[bool]$retry) {
-  if($retry){
-    $instruction="A previous attempt returned without implementation. Do not explain or plan again. Built-in edit/write are disabled. Use rewrite_file now. Read complete existing files first and pass complete updated contents."
+function Invoke-Aider(
+  [hashtable]$task,
+  [hashtable]$context,
+  [string]$prompt,
+  [bool]$architectFallback = $false,
+  [string[]]$overrideEditable = @()
+) {
+  $promptFile = New-PromptFile $task.Id $prompt
+  $editable = if ($overrideEditable.Count -gt 0) { $overrideEditable } else { @($context.Editable) }
+
+  $args = @(
+    "--model", "ollama_chat/agro-coder",
+    "--model-settings-file", "local-ai/aider-model-settings.yml",
+    "--message-file", $promptFile,
+    "--yes-always",
+    "--no-auto-commits",
+    "--no-dirty-commits",
+    "--no-auto-lint",
+    "--no-auto-test",
+    "--no-gitignore",
+    "--no-check-update",
+    "--no-show-release-notes",
+    "--analytics-disable",
+    "--no-suggest-shell-commands",
+    "--map-tokens", "768",
+    "--encoding", "utf-8",
+    "--edit-format", "whole"
+  )
+
+  if ($architectFallback) {
+    $args += @("--architect", "--editor-model", "ollama_chat/agro-coder", "--editor-edit-format", "editor-whole")
+  }
+
+  foreach ($p in @($context.ReadOnly)) {
+    if (Test-Path $p) { $args += @("--read", $p) }
+  }
+  foreach ($p in @($editable)) { $args += @("--file", $p) }
+
+  $mode = if ($architectFallback) { "architect + editor-whole" } else { "whole" }
+  Write-Host "Aider mode: $mode" -ForegroundColor DarkCyan
+  Write-Host "Editable files: $($editable.Count) | Read-only context: $($context.ReadOnly.Count)" -ForegroundColor DarkCyan
+
+  try {
+    & aider @args
+    $code = $LASTEXITCODE
+  } finally {
+    Remove-Item $promptFile -Force -ErrorAction SilentlyContinue
+  }
+  if ($code -ne 0) { Fail "Aider failed on Task $($task.Id) with exit code $code." }
+}
+
+function Invoke-Task([hashtable]$task, [hashtable]$context, [string]$taskText, [bool]$fallback) {
+  $modeNote = if ($fallback) {
+    "Previous whole-file attempt produced no implementation. Solve the task now using architect reasoning and editor-whole output."
   } else {
-    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. Built-in edit/write are disabled. Use the custom rewrite_file tool for every file change. For an existing file, read it fully and pass its complete updated contents to rewrite_file."
+    "Implement the task now. Do not only explain or plan. Produce the actual code changes."
   }
 
-  $prompt=@"
-You are the implementation worker. Actual file changes are required unless the task is already fully implemented.
-Read AGENTS.md, then only the exact files listed in the task below plus an immediate imported dependency if absolutely required.
+  $prompt = @"
+You are implementing one isolated production task for Agro Intelligence Network.
 
-$instruction
+$modeNote
 
-TASK:
+Authoritative rules:
+- Follow AGENTS.md and the task/specs exactly.
+- Only edit the files explicitly added as editable by this session.
+- Preserve unrelated existing behavior.
+- Do not edit or run tests.
+- Do not create fake data, placeholder metrics, dead UI or production emoji iconography.
+- React Native only for mobile UI; NestJS + TypeORM for backend.
+- Keep user-facing text in Spanish.
+- Do not commit or push; the runner handles git.
+- Finish by applying code changes, not by describing them.
+
+TASK $($task.Id):
 $taskText
-
-Rules:
-- repository-relative paths only;
-- never edit tests;
-- never commit or push;
-- if genuinely already implemented, append exactly:
-  NO_CHANGE_NEEDED: $($task.Id) - <specific evidence>
-  to NIGHT_REPORT.md.
 "@
-
-  & opencode run --agent build --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
-  if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
+  Invoke-Aider $task $context $prompt $fallback
 }
 
-function Ensure-TaskOutcome([hashtable]$task,[string]$before,[string]$taskText) {
-  if(Has-ProductionChanges $before){return}
+function Gate-With-Repair([hashtable]$task, [hashtable]$context, [string]$before) {
+  for ($attempt = 0; $attempt -le $MaxCompileRepairAttempts; $attempt++) {
+    $result = Invoke-Gate $task.Gate
+    if ($result.Success) {
+      Write-Host "GREEN: Task $($task.Id)" -ForegroundColor Green
+      return
+    }
+    if ($attempt -eq $MaxCompileRepairAttempts) {
+      Fail "Task $($task.Id) still fails after $MaxCompileRepairAttempts repair attempts."
+    }
 
-  $report=Get-Content "NIGHT_REPORT.md" -Raw
-  $token="NO_CHANGE_NEEDED: $($task.Id)"
-  if($report -match [regex]::Escape($token)){return}
+    $changed = @(Get-ChangedPaths $before | Where-Object {
+      $n = $_.Replace("\","/")
+      $n.StartsWith("backend/") -or $n.StartsWith("mobile/")
+    })
+    Assert-Paths $changed $task.Id
 
-  Write-Host "No implementation produced; retrying Task $($task.Id) once..." -ForegroundColor Yellow
-  Invoke-TaskAgent $task $taskText $true
+    $err = [string]$result.Output
+    if ($err.Length -gt 12000) { $err = $err.Substring($err.Length - 12000) }
 
-  if(Has-ProductionChanges $before){return}
-  $report=Get-Content "NIGHT_REPORT.md" -Raw
-  if($report -match [regex]::Escape($token)){return}
+    $repairPrompt = @"
+Repair ONLY the compile/type errors below for Task $($task.Id).
+Make actual code changes. Keep scope limited to the editable changed production files.
+Do not edit tests, broaden the feature, commit or push.
 
-  throw "Task $($task.Id) returned twice without implementation or NO_CHANGE_NEEDED evidence."
-}
-
-function Gate-With-Repair([hashtable]$task,[string]$before) {
-  for($attempt=0;$attempt -le $MaxCompileRepairAttempts;$attempt++){
-    $result=Invoke-Gate $task.Gate
-    if($result.Success){Write-Host "GREEN: Task $($task.Id)" -ForegroundColor Green;return}
-    if($attempt -eq $MaxCompileRepairAttempts){throw "Task $($task.Id) still fails after repairs."}
-
-    Assert-Paths @(Get-ChangedPaths $before) $task.Id
-    $err=[string]$result.Output
-    if($err.Length -gt 12000){$err=$err.Substring($err.Length-12000)}
-    $repair=@"
-Repair ONLY the compile errors below in production code changed/required by Task $($task.Id). Built-in edit/write are disabled. Read affected files and use rewrite_file with the complete corrected file.
-Do not edit tests, broaden scope, commit or push.
-
+COMPILER OUTPUT:
 $err
 "@
-    Write-Host "Compile repair $($attempt+1)/$MaxCompileRepairAttempts..." -ForegroundColor Yellow
-    & opencode run --agent build --model ollama/agro-coder --auto --title "Compile repair Task $($task.Id)" $repair
-    if($LASTEXITCODE -ne 0){throw "Compile repair failed."}
+    Write-Host "Compile repair $($attempt + 1)/$MaxCompileRepairAttempts..." -ForegroundColor Yellow
+    Invoke-Aider $task $context $repairPrompt $false $changed
   }
 }
 
-$start=-1
-for($i=0;$i -lt $tasks.Count;$i++){if($tasks[$i].Id -eq $StartFrom){$start=$i;break}}
-if($start -lt 0){throw "Unknown StartFrom task."}
-$tasks=$tasks[$start..($tasks.Count-1)]
+$start = -1
+for ($i = 0; $i -lt $tasks.Count; $i++) {
+  if ($tasks[$i].Id -eq $StartFrom) { $start = $i; break }
+}
+if ($start -lt 0) { Fail "Unknown StartFrom task." }
+$tasks = $tasks[$start..($tasks.Count - 1)]
 
-Write-Host "== AGRO INTELLIGENCE NIGHT BUILD =="
+Write-Host "== AGRO INTELLIGENCE NIGHT BUILD ==" -ForegroundColor Cyan
+Write-Host "Runner: Aider (OpenCode removed from autonomous path)"
+Write-Host "Model: ollama_chat/agro-coder"
+Write-Host "Edit strategy: whole-file, architect fallback"
 Write-Host "Branch: $branch"
-Write-Host "Model: ollama/agro-coder"
-Write-Host "Agent: build"
 Write-Host "Starting task: $StartFrom"
+Write-Host ""
 
-foreach($task in $tasks){
-  Write-Host ""
+foreach ($task in $tasks) {
   Write-Host "== Task $($task.Id): $($task.File) ==" -ForegroundColor Cyan
-  $before=(git rev-parse HEAD).Trim()
-  $taskText=Get-Content $task.File -Raw
 
-  Invoke-TaskAgent $task $taskText $false
+  $before = (git rev-parse HEAD).Trim()
+  $taskText = Get-Content $task.File -Raw
+  $context = Get-TaskContext $task.File
+
+  Invoke-Task $task $context $taskText $false
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
-  Ensure-TaskOutcome $task $before $taskText
+
+  if (-not (Has-ProductionChanges $before)) {
+    Write-Host "No production implementation from whole mode; retrying once with architect mode..." -ForegroundColor Yellow
+    Invoke-Task $task $context $taskText $true
+    Assert-Paths @(Get-ChangedPaths $before) $task.Id
+  }
+
+  if (-not (Has-ProductionChanges $before)) {
+    Fail "Task $($task.Id) produced no production changes after both Aider modes."
+  }
+
+  Gate-With-Repair $task $context $before
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
-  Gate-With-Repair $task $before
 
   git add backend mobile NIGHT_REPORT.md
-  if($task.Id -eq "18"){git add README.md}
-  $staged=git diff --cached --name-only
-  if($staged){
-    git commit -m $task.Commit
-    if($LASTEXITCODE -ne 0){throw "Commit failed on Task $($task.Id)."}
-  } else {
-    Write-Host "Task $($task.Id) verified with no production changes." -ForegroundColor Yellow
-  }
+  if ($task.Id -eq "18") { git add README.md }
+
+  $staged = @(git diff --cached --name-only)
+  if ($staged.Count -eq 0) { Fail "Task $($task.Id) has no staged production changes after a green gate." }
+
+  git commit -m $task.Commit
+  if ($LASTEXITCODE -ne 0) { Fail "Commit failed on Task $($task.Id)." }
+
+  Write-Host "COMMITTED: Task $($task.Id)" -ForegroundColor Green
+  Write-Host ""
 }
 
-Write-Host ""
-Write-Host "== FINAL MVP COMPILE =="
-$final=Invoke-Gate "both"
-if(-not $final.Success){throw "Final MVP compile failed."}
+Write-Host "== FINAL MVP COMPILE ==" -ForegroundColor Cyan
+$final = Invoke-Gate "both"
+if (-not $final.Success) { Fail "Final MVP compile failed." }
+
 Write-Host "NIGHT BUILD FINISHED GREEN." -ForegroundColor Green
 Write-Host "No tests were run. No push was performed."

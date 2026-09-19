@@ -1,0 +1,5 @@
+- name: ollama_chat/agro-coder
+  edit_format: whole
+  use_repo_map: true
+  extra_params:
+    num_ctx: 16384

@@ -1,37 +1,28 @@
-# Local AI — Ollama + OpenCode
+# Local AI - Ollama + Aider
 
-## Prerequisitos
-- Ollama instalado y corriendo
-- Node/npm
-- OpenCode instalado
+El Night Build autonomo ya no usa OpenCode. OpenCode queda disponible solo para uso manual.
+El runner nocturno usa Aider con Ollama porque Aider aplica cambios de archivos mediante formatos de edicion y no depende de tool calling del modelo.
 
-## Modelo del proyecto
-Desde la raíz:
+## Instalar Aider una vez
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1
-```
-
-El setup descarga Devstral Small 2 24B y crea `ollama/agro-coder` con contexto 16K.
+~~~powershell
+python -m pip install aider-install
+aider-install
+~~~
 
 Verificar:
 
-```powershell
-ollama ps
-opencode models
-```
+~~~powershell
+aider --version
+ollama list
+~~~
 
 ## Night Build
-Usar la rama dedicada `night-build-mvp` y un working tree limpio.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/night-build.ps1
-```
-
-Para reanudar desde una tarea concreta:
-
-```powershell
+~~~powershell
 powershell -ExecutionPolicy Bypass -File scripts/night-build.ps1 -StartFrom 03
-```
+~~~
 
-El runner verifica primero que OpenCode pueda escribir, ejecuta cada task con el agente `build`, compila y crea commits locales. Nunca hace push.
+El runner usa ollama_chat/agro-coder, formato whole-file, fallback architect/editor-whole, compila despues de cada task, repara hasta dos veces, hace commits locales y nunca hace push.
+
+No crear otro repositorio: backend/, mobile/, specs/ y night-tasks/ de este repo siguen siendo la fuente de verdad.
