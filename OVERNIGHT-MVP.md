@@ -1,107 +1,73 @@
-# Agro Intelligence — OVERNIGHT MVP BUILD
+# Agro Intelligence - NIGHT BUILD V2
 
-## Goal
-Maximize DEMO-READY MVP progress during an unattended local run without destabilizing F01/F02.
+## Purpose
+Run a safe, unattended LOCAL execution with OpenCode + Ollama.
 
-This file guides execution. It is not permission to invent missing business rules.
+The local model is an implementation worker, not a product architect.
 
-## Priority order
-0. Stabilize the existing Mobile UI/UX foundation and obvious F01/F02 regressions
-1. F03 — Rodeos, animales, pesajes y eventos
-2. F04 — Motor de indicadores
-3. F07 — Contexto climático
-4. F09 — Dashboard móvil
-5. F06 — Motor de alertas
-6. F05 — Benchmark anónimo
-7. F08 — Asistente Agro IA
+## Why V2 exists
+The first unattended run created an invalid root-level `src/` tree and invented architecture.
+V2 prevents that by:
+- using small isolated tasks;
+- allowing only `mobile/**` and `NIGHT_REPORT.md` during the current run;
+- validating changed paths after every task;
+- running TypeScript and Jest gates;
+- committing only from the PowerShell wrapper after GREEN;
+- stopping F03+ until their specs are sufficiently defined.
 
-If a feature lacks enough specification to implement safely, mark it BLOCKED/PARTIAL and move to the next independent task.
+## Current unattended scope
+Only Phase 0 - F01/F02 mobile stabilization.
 
-## Phase 0 — Mobile stabilization
-Do not redesign from scratch. Reuse `mobile/src/theme`, `mobile/src/components` and `mobile/src/services`.
+Allowed production path:
+- `mobile/**`
 
-Fix high-impact issues only:
-- UTF-8/mojibake and user-visible English
-- production emoji/icon inconsistencies
-- broken navigation
-- stale list/detail after CREATE/UPDATE/DELETE
-- oversized/misaligned controls that violate UX01
-- GeoRef province/locality behavior
-- Google Maps rendering/configuration problems
-- loading/error/empty states
-- remove future features presented as active
+Allowed report:
+- `NIGHT_REPORT.md`
 
-Keep F01/F02 backend contracts unchanged.
+Forbidden during this run:
+- root `src/**`
+- `backend/**`
+- `specs/**`
+- `.agents/**`
+- `.opencode/**`
+- product/domain invention
+- new backend contracts
+- F03/F04/F06/F07/F08/F09 implementation
 
-## F03
-Use the feature spec if available. Implement only what is sufficiently specified.
-Ownership must respect INV-05.
-Do not invent veterinary or production semantics.
+## Task order
+1. `night-tasks/01-encoding-icons.md`
+2. `night-tasks/02-navigation-refresh.md`
+3. `night-tasks/03-georef-searchable-select.md`
+4. `night-tasks/04-ui-foundation-cleanup.md`
+5. `night-tasks/05-map-sanity.md`
 
-## F04
-Indicators are deterministic. Follow INV-01 and INV-09.
-Implement only formulas explicitly defined by specs/domain rules and backed by available data.
-Never use an LLM to calculate official values.
+Each task is a separate OpenCode run with fresh context.
 
-## F07
-Use establishment latitude/longitude.
-External weather providers must be encapsulated behind a service/adapter.
-Secrets belong server-side where required.
-Follow INV-10.
+## Per-task gate
+After each task the wrapper must:
+1. verify no forbidden path was changed;
+2. run `npx tsc --noEmit` in `mobile/`;
+3. run `npx jest --runInBand` in `mobile/`;
+4. commit locally only if GREEN;
+5. stop immediately on a forbidden path or failed gate.
 
-## F09
-Build a useful dashboard only from implemented data.
-Reuse UX01 components.
-Do not fabricate metrics or expose inactive features.
+## Visual limitation
+The worker cannot declare UX01 visually complete.
+Real screenshots + visual-redteam + human approval remain mandatory.
 
-## F06
-Alerts must be deterministic and thresholds configurable.
-Follow INV-09.
-Do not invent agronomic/veterinary thresholds.
+## Feature work after Phase 0
+Do not implement F03+ unattended unless a concrete spec exists.
 
-## F05
-Follow `specs/features/F05-benchmark-anonimo.md` exactly.
-k >= 10 is mandatory.
-No individual third-party data may be exposed.
+Current state:
+- F01 implemented
+- F02 implemented
+- F05 specified but depends on F04
+- F03/F04/F06/F07/F08/F09 are not sufficiently specified for autonomous implementation
 
-## F08
-Last priority.
-Follow INV-01, INV-06, INV-07, INV-08 and INV-11.
-The LLM explains deterministic context; it does not query the DB directly or calculate official metrics.
-
-## Per-slice loop
-1. Read only the relevant spec and code.
-2. Implement the smallest complete vertical slice.
-3. Run focused tests/typecheck/build.
-4. Fix failures.
-5. Run the relevant feature gate.
-6. Use the reviewer subagent for non-trivial/risky changes.
-7. If GREEN, create a LOCAL commit.
-8. Update `NIGHT_REPORT.md`.
-9. Continue.
-
-## Testing
-Required for business logic, ownership, contracts, persistence, calculations, navigation, state synchronization and adapters.
-Avoid pixel/color/spacing tests and giant snapshots.
+A missing spec is a BLOCKER, not permission to invent.
 
 ## Git
-Allowed: local commits.
-Forbidden: push, force push, reset --hard, clean -fd, rewriting history.
-
-## Context discipline
-Never bulk-read node_modules, build output, coverage, .git or historical run logs.
-Prefer relevant spec -> relevant module -> relevant test -> implementation.
-
-## Stop conditions
-Stop a specific task when:
-- a missing product decision is required
-- a secret/config value is unavailable
-- proceeding risks data loss
-- F01/F02 backend contract would need an unapproved change
-
-Record the blocker and continue elsewhere.
-
-## End-of-night gate
-Run all available build/test/typecheck commands that are actually configured.
-Update `NIGHT_REPORT.md` with completed/partial/blocked work, local commits, test results and demo instructions.
 Never push.
+Never force push.
+Never reset --hard.
+Never clean -fd.

@@ -7,64 +7,52 @@ Model:
 Started:
 Finished:
 
-## Phase 0 — Mobile stabilization
+## Task 01 - Encoding and icons
 Status: PENDING
 Changes:
 Tests:
 Commit:
 Blockers:
 
-## F03
+## Task 02 - Navigation and refresh
 Status: PENDING
 Changes:
 Tests:
 Commit:
 Blockers:
 
-## F04
+## Task 03 - GeoRef and SearchableSelect
 Status: PENDING
 Changes:
 Tests:
 Commit:
 Blockers:
 
-## F07
+## Task 04 - UI foundation cleanup
 Status: PENDING
 Changes:
 Tests:
 Commit:
 Blockers:
 
-## F09
+## Task 05 - Map sanity
 Status: PENDING
 Changes:
 Tests:
 Commit:
 Blockers:
 
-## F06
-Status: PENDING
-Changes:
-Tests:
-Commit:
-Blockers:
-
-## F05
-Status: PENDING
-Changes:
-Tests:
-Commit:
-Blockers:
-
-## F08
-Status: PENDING
-Changes:
-Tests:
-Commit:
-Blockers:
+## Future features
+F03: BLOCKED - spec required
+F04: BLOCKED - spec required
+F05: BLOCKED - depends on F04
+F06: BLOCKED - spec required
+F07: BLOCKED - spec required
+F08: BLOCKED - spec required and depends on F04/F05/F06/F07
+F09: BLOCKED - spec required
 
 ## Final gate
-Backend:
-Mobile:
+TypeScript:
+Jest:
 Working tree:
-Demo commands:
+Human screenshot review required: YES
