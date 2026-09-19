@@ -33,8 +33,8 @@ if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
   Fail "Ollama is not installed or not available in PATH."
 }
 
-$ollamaList = (& ollama list 2>&1 | Out-String)
-if ($LASTEXITCODE -ne 0 -or $ollamaList -notmatch "(?m)^agro-coder\s") {
+& ollama show agro-coder *> $null
+if ($LASTEXITCODE -ne 0) {
   Fail "Ollama model 'agro-coder' is not available. Run scripts/setup-local-ai.ps1 first."
 }
 

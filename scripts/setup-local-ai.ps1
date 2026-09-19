@@ -5,9 +5,6 @@ Write-Host "== Agro Intelligence local AI setup =="
 if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
   throw "Ollama is not installed or not in PATH."
 }
-if (-not (Get-Command opencode -ErrorAction SilentlyContinue)) {
-  throw "OpenCode is not installed or not in PATH."
-}
 
 Write-Host "Ollama version:"
 ollama --version
@@ -18,7 +15,7 @@ ollama pull devstral-small-2:24b
 Write-Host "Creating agro-coder with 16K context..."
 ollama create agro-coder -f local-ai/Modelfile
 
-Write-Host "Available OpenCode models:"
-opencode models
+Write-Host "Verifying agro-coder..."
+ollama show agro-coder | Out-Null
 
 Write-Host "Setup complete."
