@@ -1,9 +1,7 @@
-# Task 18 - MVP integration polish
+# Task 18 - integración final MVP
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer primero
 - specs/000-index.md
-- MVP-EXECUTION-PLAN.md
 - README.md
 - backend/src/app.module.ts
 - backend/src/data-source.ts
@@ -12,15 +10,15 @@ Leer exactamente:
 - backend/.env.example
 - mobile/.env.example
 
-Luego leer únicamente los archivos concretos mencionados por errores de compilación o imports directos desde esos archivos.
+Después inspeccionar solo producción necesaria para resolver imports/integración.
 
-Objetivo:
-- arreglar imports/routes de integración;
-- eliminar debug logs y controles placeholder/muertos;
-- español visible;
+## Implementar
+- corregir imports/rutas rotas entre F03-F09;
+- remover debug logs y placeholders muertos;
+- UI visible en español;
 - sin emojis Unicode de producción;
 - env examples sin secretos;
-- README actualizado;
-- backend y mobile compilan.
+- actualizar README al MVP realmente implementado;
+- no inventar features nuevas.
 
-No nuevas features. No tests.
+No tests.

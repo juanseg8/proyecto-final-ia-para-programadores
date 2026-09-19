@@ -1,45 +1,37 @@
 # Local AI — Ollama + OpenCode
 
-## Prerequisites
-- Ollama installed/running
+## Prerequisitos
+- Ollama instalado y corriendo
 - Node/npm
-- OpenCode installed globally
+- OpenCode instalado
 
-## Create the project model
-From repository root:
+## Modelo del proyecto
+Desde la raíz:
 
 ```powershell
-ollama pull qwen2.5-coder:7b
-ollama create agro-coder -f local-ai/Modelfile
-ollama run agro-coder
+powershell -ExecutionPolicy Bypass -File scripts/setup-local-ai.ps1
 ```
 
-Exit with `/bye`.
+El setup descarga Devstral Small 2 24B y crea `ollama/agro-coder` con contexto 16K.
 
-Verify:
+Verificar:
+
 ```powershell
 ollama ps
-```
-
-Prefer GPU execution. If 16K context is unstable/too slow, reduce `num_ctx` in the Modelfile to 8192 and recreate the model.
-
-## Verify OpenCode
-```powershell
 opencode models
 ```
 
-You should see `ollama/agro-coder`.
-
-Read-only smoke test:
-```powershell
-opencode run --model ollama/agro-coder "Read AGENTS.md and summarize the project rules. Do not edit files."
-```
-
-## Run overnight
-Create/use a dedicated branch first, then:
+## Night Build
+Usar la rama dedicada `night-build-mvp` y un working tree limpio.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/night-build.ps1
 ```
 
-The night worker may create local commits but must never push.
+Para reanudar desde una tarea concreta:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/night-build.ps1 -StartFrom 03
+```
+
+El runner verifica primero que OpenCode pueda escribir, ejecuta cada task con el agente `build`, compila y crea commits locales. Nunca hace push.

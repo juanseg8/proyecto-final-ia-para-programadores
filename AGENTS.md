@@ -1,15 +1,14 @@
 # Agro Intelligence - Project Instructions
 
-Fuente de verdad: constitution -> index -> feature spec -> UX01 si UI -> implementación.
+Fuente de verdad: specs/constitution.md → specs/000-index.md → spec de la feature → specs/ui/UX01-Design-System.md cuando corresponda → implementación.
 
-Stack: NestJS + TypeORM + PostgreSQL; React Native + Expo + TypeScript. Producción solo backend/ y mobile/. Nunca root src/.
+Stack: NestJS + TypeORM + PostgreSQL; React Native + Expo + TypeScript. Producción solo en backend/ y mobile/. Nunca crear src/ en raíz.
 
-F01/F02 existen. F03-F09 están definidos para completar MVP.
+Invariantes: números visibles determinísticos, benchmark k>=10 sin datos individuales y opt-in, ownership de recursos, IA sin DB directa, fallback de IA, auditoría IA, thresholds configurables, secretos fuera del mobile y sin diagnóstico veterinario.
 
-Invariantes: números determinísticos fuera LLM; benchmark k>=10, sin datos individuales, opt-in; ownership; IA sin DB; fallback IA; auditoría IA; thresholds config; secretos fuera mobile; IA no diagnostica.
+NIGHT_BUILD: cada task es autocontenida. Leer solo los paths indicados por esa task y sus imports directos cuando sean imprescindibles. Implementar → compilar → reparación mínima → commit local → siguiente.
 
-NIGHT_BUILD: task -> implement -> compile -> reparación mínima -> commit local -> siguiente. No crear/reparar/ejecutar tests nocturnos.
+No leer/editar/ejecutar tests durante NIGHT_BUILD. No node_modules, .git, dist/build/coverage ni .agents/runs.
+Nunca push, force push, reset --hard, clean -fd ni rewrite history.
 
-No escanear repo recursivamente. No node_modules, .git, dist/build/coverage, .agents/runs ni tests.
-Nunca push, force push, reset --hard, clean -fd.
-UI español, RN primitives, UX01/shared components, sin métricas falsas ni emoji Unicode de producción.
+UI: español, React Native primitives, UX01/shared components, sin métricas falsas ni emojis Unicode como iconografía de producción.

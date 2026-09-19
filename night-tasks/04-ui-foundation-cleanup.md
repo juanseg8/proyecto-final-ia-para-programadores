@@ -1,8 +1,8 @@
-# Task 04 - UI foundation cleanup
+# Task 04 - UI foundation F01/F02
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/ui/UX01-Design-System.md
+- mobile/App.tsx
 - mobile/src/theme/theme.ts
 - mobile/src/components/AppScreen.tsx
 - mobile/src/components/AppHeader.tsx
@@ -19,8 +19,14 @@ Leer exactamente:
 - mobile/src/screens/EstablishmentListScreen.tsx
 - mobile/src/screens/EstablishmentDetailScreen.tsx
 - mobile/src/screens/EstablishmentFormScreen.tsx
-- mobile/App.tsx
 
-Objetivo: aplicar UX01 con componentes/tokens compartidos, español, jerarquía consistente, acción destructiva diferenciada, sin UI futura fingiendo funcionar y sin emojis Unicode de producción.
+## Implementar
+- aplicar tokens y componentes compartidos UX01;
+- corregir mojibake/textos visibles y mantener español;
+- eliminar emojis Unicode usados como iconografía de producción;
+- quitar tabs/acciones futuras que aparenten funcionar;
+- distinguir claramente acciones destructivas;
+- eliminar console.log/debug visible en producción;
+- preservar contratos y flujos F01/F02.
 
-No redesign especulativo. No tests. Registrar HUMAN_SCREENSHOT_REQUIRED.
+No rediseño especulativo. No tests.

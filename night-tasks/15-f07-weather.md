@@ -1,7 +1,6 @@
-# Task 15 - F07 weather
+# Task 15 - F07 clima
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F07-clima.md
 - specs/ui/UX01-Design-System.md
 - backend/src/app.module.ts
@@ -12,5 +11,11 @@ Leer exactamente:
 - mobile/src/components/index.ts
 - mobile/src/theme/theme.ts
 
-Crear exactamente los paths F07 listados en PROJECT-MAP.md.
-Backend Open-Meteo + ownership + timeout/fallback. Mobile consume backend, nunca proveedor directo. No tests.
+## Crear
+- backend/src/weather/weather.module.ts
+- backend/src/weather/weather.controller.ts
+- backend/src/weather/weather.service.ts
+- backend/src/weather/open-meteo.provider.ts
+- mobile/src/components/WeatherCard.tsx
+
+Implementar Open-Meteo desde backend con ownership, timeout y fallback UNAVAILABLE. Mobile consume solo backend. Registrar módulo e integrar card. No tests.

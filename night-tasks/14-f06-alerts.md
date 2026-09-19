@@ -1,12 +1,16 @@
-# Task 14 - F06 alerts
+# Task 14 - F06 alertas determinísticas
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F06-alertas.md
 - backend/src/app.module.ts
 - backend/src/indicators/indicators.service.ts
 - backend/src/benchmark/benchmark.service.ts
 - backend/src/livestock/livestock.service.ts
 
-Crear exactamente los paths F06 listados en PROJECT-MAP.md.
-Implementar reglas configurables. Dato faltante no se convierte en cero. Sin LLM. Registrar módulo. No tests.
+## Crear
+- backend/src/alerts/alerts.module.ts
+- backend/src/alerts/alerts.controller.ts
+- backend/src/alerts/alerts.service.ts
+- backend/src/alerts/alerts.config.ts
+
+Implementar reglas configurables de F06. Dato faltante no se convierte en cero. Sin LLM. Registrar módulo. No tests.

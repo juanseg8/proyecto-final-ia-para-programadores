@@ -1,6 +1,6 @@
 param(
-  [ValidateSet("02","03","04","05","10","11","12","13","14","15","16","17","18")]
-  [string]$StartFrom = "02",
+  [ValidateSet("03","04","05","10","11","12","13","14","15","16","17","18")]
+  [string]$StartFrom = "03",
   [int]$MaxCompileRepairAttempts = 2
 )
 
@@ -14,50 +14,37 @@ if (git status --porcelain) { throw "Working tree is not clean." }
 Write-Host "NIGHT BUILD write probe..." -ForegroundColor Cyan
 $probeFile = "night-agent-write-probe.txt"
 if (Test-Path $probeFile) { Remove-Item $probeFile -Force }
-
 $probePrompt = @"
-This is a mandatory write-capability probe.
-Create exactly one file at repository root named night-agent-write-probe.txt with exactly this text:
+Create exactly one file at repository root named night-agent-write-probe.txt with exactly:
 WRITE_OK
-Do not read or modify any other file. Do not commit or push. Stop immediately after creating the file.
+Do not read or modify any other file. Stop immediately after creating it.
 "@
-
 & opencode run --agent build --model ollama/agro-coder --auto --title "Night Build write probe" $probePrompt
 if ($LASTEXITCODE -ne 0) { throw "OpenCode write probe process failed." }
-
-if (-not (Test-Path $probeFile)) {
-  throw "OpenCode did not create the write probe. Night Build cannot safely start because the agent is not writing files."
-}
-$probeContent = (Get-Content $probeFile -Raw).Trim()
-if ($probeContent -ne "WRITE_OK") {
-  throw "OpenCode write probe created unexpected content."
-}
+if (-not (Test-Path $probeFile)) { throw "OpenCode did not create the write probe." }
+if ((Get-Content $probeFile -Raw).Trim() -ne "WRITE_OK") { throw "Write probe content is invalid." }
 Remove-Item $probeFile -Force
-if (git status --porcelain) {
-  throw "Write probe left unexpected repository changes."
-}
+if (git status --porcelain) { throw "Write probe left unexpected repository changes." }
 Write-Host "WRITE PROBE GREEN" -ForegroundColor Green
 
 $tasks = @(
-  @{ Id="02"; Agent="build"; File="night-tasks/02-navigation-refresh.md"; Gate="mobile"; Commit="night: stabilize F02 navigation and refresh" },
-  @{ Id="03"; Agent="build"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
-  @{ Id="04"; Agent="build"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
-  @{ Id="05"; Agent="build"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
-  @{ Id="10"; Agent="build"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
-  @{ Id="11"; Agent="build"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
-  @{ Id="12"; Agent="build"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
-  @{ Id="13"; Agent="build"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
-  @{ Id="14"; Agent="build"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
-  @{ Id="15"; Agent="build"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
-  @{ Id="16"; Agent="build"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
-  @{ Id="17"; Agent="build"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
-  @{ Id="18"; Agent="build"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
+  @{ Id="03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
+  @{ Id="04"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
+  @{ Id="05"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
+  @{ Id="10"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
+  @{ Id="11"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
+  @{ Id="12"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
+  @{ Id="13"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
+  @{ Id="14"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
+  @{ Id="15"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
+  @{ Id="16"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
+  @{ Id="17"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
+  @{ Id="18"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
 )
 
 function Get-ChangedPaths([string]$before) {
   $paths=@()
-  $d=git diff --name-only "$before..HEAD"
-  if($d){$paths+=$d}
+  $d=git diff --name-only "$before..HEAD"; if($d){$paths+=$d}
   foreach($line in (git status --porcelain)){
     if($line.Length -lt 4){continue}
     $p=$line.Substring(3).Trim()
@@ -94,8 +81,7 @@ function Invoke-Cmd([string]$working,[string]$command) {
 }
 
 function Invoke-Gate([string]$gate) {
-  $all=@()
-  $ok=$true
+  $all=@(); $ok=$true
   if($gate -eq "backend" -or $gate -eq "both"){
     Write-Host "Backend build..." -ForegroundColor Cyan
     $r=Invoke-Cmd "backend" "npm run build"
@@ -104,105 +90,86 @@ function Invoke-Gate([string]$gate) {
   }
   if($ok -and ($gate -eq "mobile" -or $gate -eq "both")){
     Write-Host "Mobile TypeScript..." -ForegroundColor Cyan
-    $r=Invoke-Cmd "mobile" "npx tsc --noEmit"
+    $r=Invoke-Cmd "mobile" "npx tsc --noEmit -p tsconfig.night.json"
     $all += "MOBILE:" + [Environment]::NewLine + $r.Output
     if(-not $r.Success){$ok=$false}
   }
   return @{Success=$ok;Output=($all -join [Environment]::NewLine)}
 }
 
-function Gate-With-Repair([string]$label,[string]$gate,[string]$before,[string]$taskId) {
-  for($attempt=0;$attempt -le $MaxCompileRepairAttempts;$attempt++){
-    $result=Invoke-Gate $gate
-    if($result.Success){Write-Host "GREEN: $label" -ForegroundColor Green;return}
-    if($attempt -eq $MaxCompileRepairAttempts){throw "$label still fails after compile repair attempts."}
-    Assert-Paths @(Get-ChangedPaths $before) $taskId
-    $err=[string]$result.Output
-    if($err.Length -gt 12000){$err=$err.Substring($err.Length-12000)}
-    Write-Host "Compile repair $($attempt+1)/$MaxCompileRepairAttempts" -ForegroundColor Yellow
-    $prompt=@"
-Task: $label
-Gate: $gate
-
-Compiler output:
-----------------
-$err
-----------------
-
-Repair only these compilation errors. Do not touch tests, specs or unrelated features. Do not commit or push.
-"@
-    & opencode run --agent build --model ollama/agro-coder --auto --title "Compile repair $label" $prompt
-    if($LASTEXITCODE -ne 0){throw "Compile repair agent failed."}
-  }
+function Has-ProductionChanges([string]$before) {
+  $paths=@(Get-ChangedPaths $before)
+  return @($paths | Where-Object {
+    $_.Replace("\","/").StartsWith("backend/") -or
+    ($_.Replace("\","/").StartsWith("mobile/") -and -not $_.Replace("\","/").StartsWith("mobile/__tests__/"))
+  }).Count -gt 0
 }
 
-
-
-function Retry-NoChangeTask([hashtable]$task,[string]$before) {
-  $paths = @(Get-ChangedPaths $before)
-  $production = @($paths | Where-Object {
-    $_.Replace("\\","/").StartsWith("backend/") -or
-    ($_.Replace("\\","/").StartsWith("mobile/") -and -not $_.Replace("\\","/").StartsWith("mobile/__tests__/"))
-  })
-
-  $report = ""
-  if (Test-Path "NIGHT_REPORT.md") { $report = Get-Content "NIGHT_REPORT.md" -Raw }
-  $token = "NO_CHANGE_NEEDED: $($task.Id)"
-
-  if ($production.Count -gt 0 -or $report -match [regex]::Escape($token)) {
-    return
+function Invoke-TaskAgent([hashtable]$task,[string]$taskText,[bool]$retry) {
+  if($retry){
+    $instruction="A previous attempt returned without implementation. Do not explain or plan again. Use edit/write tools now."
+  } else {
+    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. Use edit/write tools for required changes."
   }
 
-  Write-Host "Task $($task.Id) returned no implementation. Retrying once with explicit completion instructions..." -ForegroundColor Yellow
-  $taskText = Get-Content $task.File -Raw
+  $prompt=@"
+You are the implementation worker. Actual file changes are required unless the task is already fully implemented.
+Read AGENTS.md, then only the exact files listed in the task below plus an immediate imported dependency if absolutely required.
 
-  $retryPrompt = @"
-You previously returned without producing the required implementation.
-Do not explain or plan again. Use file edit/write tools now.
+$instruction
 
-Execute the task NOW.
-
+TASK:
 $taskText
 
 Rules:
-- use only repository-relative paths from PROJECT-MAP.md;
-- do not read directories or tests;
-- do not repeat broad analysis;
-- if work is required, edit the production files now;
-- if the requested behavior is already fully implemented, update NIGHT_REPORT.md with:
-  NO_CHANGE_NEEDED: $($task.Id) - <specific evidence from the files>
-- do not commit or push;
-- stop only after one of those two outcomes.
+- repository-relative paths only;
+- never edit tests;
+- never commit or push;
+- if genuinely already implemented, append exactly:
+  NO_CHANGE_NEEDED: $($task.Id) - <specific evidence>
+  to NIGHT_REPORT.md.
 "@
 
-  & opencode run --agent $task.Agent --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id) completion retry" $retryPrompt
-  if ($LASTEXITCODE -ne 0) { throw "OpenCode completion retry failed on Task $($task.Id)." }
-  Assert-Paths @(Get-ChangedPaths $before) $task.Id
+  & opencode run --agent build --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
+  if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
 }
 
-function Assert-TaskCompletion([string]$before,[string]$taskId) {
-  $paths = @(Get-ChangedPaths $before)
-  $production = @($paths | Where-Object {
-    $_.Replace("\\","/").StartsWith("backend/") -or
-    ($_.Replace("\\","/").StartsWith("mobile/") -and -not $_.Replace("\\","/").StartsWith("mobile/__tests__/"))
-  })
+function Ensure-TaskOutcome([hashtable]$task,[string]$before,[string]$taskText) {
+  if(Has-ProductionChanges $before){return}
 
-  if ($production.Count -gt 0) {
-    return
+  $report=Get-Content "NIGHT_REPORT.md" -Raw
+  $token="NO_CHANGE_NEEDED: $($task.Id)"
+  if($report -match [regex]::Escape($token)){return}
+
+  Write-Host "No implementation produced; retrying Task $($task.Id) once..." -ForegroundColor Yellow
+  Invoke-TaskAgent $task $taskText $true
+
+  if(Has-ProductionChanges $before){return}
+  $report=Get-Content "NIGHT_REPORT.md" -Raw
+  if($report -match [regex]::Escape($token)){return}
+
+  throw "Task $($task.Id) returned twice without implementation or NO_CHANGE_NEEDED evidence."
+}
+
+function Gate-With-Repair([hashtable]$task,[string]$before) {
+  for($attempt=0;$attempt -le $MaxCompileRepairAttempts;$attempt++){
+    $result=Invoke-Gate $task.Gate
+    if($result.Success){Write-Host "GREEN: Task $($task.Id)" -ForegroundColor Green;return}
+    if($attempt -eq $MaxCompileRepairAttempts){throw "Task $($task.Id) still fails after repairs."}
+
+    Assert-Paths @(Get-ChangedPaths $before) $task.Id
+    $err=[string]$result.Output
+    if($err.Length -gt 12000){$err=$err.Substring($err.Length-12000)}
+    $repair=@"
+Repair ONLY the compile errors below in production code changed/required by Task $($task.Id).
+Do not edit tests, broaden scope, commit or push.
+
+$err
+"@
+    Write-Host "Compile repair $($attempt+1)/$MaxCompileRepairAttempts..." -ForegroundColor Yellow
+    & opencode run --agent build --model ollama/agro-coder --auto --title "Compile repair Task $($task.Id)" $repair
+    if($LASTEXITCODE -ne 0){throw "Compile repair failed."}
   }
-
-  $report = ""
-  if (Test-Path "NIGHT_REPORT.md") {
-    $report = Get-Content "NIGHT_REPORT.md" -Raw
-  }
-
-  $token = "NO_CHANGE_NEEDED: $taskId"
-  if ($report -match [regex]::Escape($token)) {
-    Write-Host "Task $taskId explicitly verified as already implemented." -ForegroundColor Yellow
-    return
-  }
-
-  throw "Task $taskId produced no production changes and did not record '$token' with a reason. Treating this as incomplete instead of silently continuing."
 }
 
 $start=-1
@@ -210,10 +177,10 @@ for($i=0;$i -lt $tasks.Count;$i++){if($tasks[$i].Id -eq $StartFrom){$start=$i;br
 if($start -lt 0){throw "Unknown StartFrom task."}
 $tasks=$tasks[$start..($tasks.Count-1)]
 
-Write-Host "== AGRO INTELLIGENCE NIGHT BUILD V8 FULL MVP =="
+Write-Host "== AGRO INTELLIGENCE NIGHT BUILD =="
 Write-Host "Branch: $branch"
-Write-Host "Model: ollama/agro-coder"`nWrite-Host "OpenCode agent: build (write-capability verified before tasks)"
-Write-Host "No Jest. Product code + compile gates."
+Write-Host "Model: ollama/agro-coder"
+Write-Host "Agent: build"
 Write-Host "Starting task: $StartFrom"
 
 foreach($task in $tasks){
@@ -221,25 +188,12 @@ foreach($task in $tasks){
   Write-Host "== Task $($task.Id): $($task.File) ==" -ForegroundColor Cyan
   $before=(git rev-parse HEAD).Trim()
   $taskText=Get-Content $task.File -Raw
-  $prompt=@"
-You are the implementation worker. Your output is judged by actual file changes, not by prose.
-Read the exact files required by this task, then IMPLEMENT it using file edit/write tools.
-Do not stop after analysis or say what you plan to do.
-Execute exactly this task:
 
-$taskText
-
-Use only repository-relative paths copied verbatim from the task and PROJECT-MAP.md.
-Never construct absolute Windows paths and never Read a directory.
-Do not search for alternate tasks. Do not read or edit tests. Do not commit or push.
-"@
-  & opencode run --agent $task.Agent --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
-  if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
-
+  Invoke-TaskAgent $task $taskText $false
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
-  Retry-NoChangeTask $task $before
-  Assert-TaskCompletion $before $task.Id
-  Gate-With-Repair "Task $($task.Id)" $task.Gate $before $task.Id
+  Ensure-TaskOutcome $task $before $taskText
+  Assert-Paths @(Get-ChangedPaths $before) $task.Id
+  Gate-With-Repair $task $before
 
   git add backend mobile NIGHT_REPORT.md
   if($task.Id -eq "18"){git add README.md}
@@ -247,12 +201,14 @@ Do not search for alternate tasks. Do not read or edit tests. Do not commit or p
   if($staged){
     git commit -m $task.Commit
     if($LASTEXITCODE -ne 0){throw "Commit failed on Task $($task.Id)."}
-  } else {Write-Host "Task $($task.Id) produced no changes."}
+  } else {
+    Write-Host "Task $($task.Id) verified with no production changes." -ForegroundColor Yellow
+  }
 }
 
 Write-Host ""
 Write-Host "== FINAL MVP COMPILE =="
 $final=Invoke-Gate "both"
 if(-not $final.Success){throw "Final MVP compile failed."}
-Write-Host "NIGHT BUILD V8 FINISHED GREEN." -ForegroundColor Green
+Write-Host "NIGHT BUILD FINISHED GREEN." -ForegroundColor Green
 Write-Host "No tests were run. No push was performed."

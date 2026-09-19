@@ -1,7 +1,6 @@
-# Task 03 - GeoRef and SearchableSelect
+# Task 03 - GeoRef + SearchableSelect
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F02-Establecimiento.md
 - specs/ui/UX01-Design-System.md
 - mobile/src/services/georefService.ts
@@ -11,15 +10,18 @@ Leer exactamente:
 - mobile/src/components/AppInput.tsx
 - mobile/src/theme/theme.ts
 
-Crear si no existe:
+## Crear
 - mobile/src/components/SearchableSelect.tsx
 
-Objetivo:
-- selector reusable y searchable;
-- selected/loading/error/retry/disabled;
-- localidad deshabilitada hasta provincia;
+## Implementar
+- selector reusable y searchable con Modal/React Native primitives;
+- estados selected, loading, error, retry y disabled;
+- localidad deshabilitada hasta elegir provincia;
 - cambiar provincia limpia localidad;
-- payload sigue province:string/locality:string;
-- sin fallback silencioso a input libre.
+- integrar ambos selectores en EstablishmentFormScreen;
+- payload canónico sigue enviando province:string y locality:string;
+- sin fallback silencioso a input libre;
+- eliminar los modales/selectores inline anteriores que queden reemplazados;
+- actualizar mobile/src/components/index.ts.
 
-No buscar otras rutas/specs. No leer directorios. No tests.
+No tests. No fake data. No cambiar backend.

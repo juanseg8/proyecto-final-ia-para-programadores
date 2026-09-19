@@ -1,7 +1,6 @@
-# Task 12 - F04 indicators
+# Task 12 - F04 indicadores determinísticos
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F04-indicadores.md
 - backend/src/app.module.ts
 - backend/src/data-source.ts
@@ -10,8 +9,13 @@ Leer exactamente:
 - backend/src/entities/animal.entity.ts
 - backend/src/entities/weighing.entity.ts
 - backend/src/entities/livestock-event.entity.ts
-- backend/src/livestock/livestock.module.ts
 - backend/src/livestock/livestock.service.ts
 
-Crear exactamente los paths F04 listados en PROJECT-MAP.md.
-Implementar fórmulas determinísticas exactas. Registrar módulo/entidad. No LLM. No tests.
+## Crear
+- backend/src/entities/indicator-snapshot.entity.ts
+- backend/src/indicators/indicators.module.ts
+- backend/src/indicators/indicators.controller.ts
+- backend/src/indicators/indicators.service.ts
+- backend/src/db/migrations/1790000001000-F04Indicators.ts
+
+Implementar exactamente GMD, cabezas activas, carga animal, mortandad y costo/kg según F04. Ningún cálculo depende del LLM. Registrar módulo/entidad. No tests.

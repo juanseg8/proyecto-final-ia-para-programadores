@@ -1,14 +1,19 @@
-# Task 13 - F05 benchmark
+# Task 13 - F05 benchmark anónimo
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F05-benchmark-anonimo.md
 - backend/src/app.module.ts
 - backend/src/data-source.ts
 - backend/src/entities/establishment.entity.ts
 - backend/src/entities/indicator-snapshot.entity.ts
-- backend/src/indicators/indicators.module.ts
 - backend/src/indicators/indicators.service.ts
 
-Crear exactamente los paths F05 listados en PROJECT-MAP.md.
-Implementar k>=10, opt-in, excluir caller, relajación progresiva y DTO sin registros de terceros. Registrar módulo/entidad/config. No tests.
+## Crear
+- backend/src/entities/benchmark-snapshot.entity.ts
+- backend/src/benchmark/benchmark.module.ts
+- backend/src/benchmark/benchmark.controller.ts
+- backend/src/benchmark/benchmark.service.ts
+- backend/src/benchmark/benchmark.config.ts
+- backend/src/db/migrations/1790000002000-F05Benchmark.ts
+
+Implementar k>=10, opt-in, exclusión del establecimiento consultante, relajación progresiva y respuesta sin datos individuales de terceros. Registrar config/módulo/entidad. No tests.

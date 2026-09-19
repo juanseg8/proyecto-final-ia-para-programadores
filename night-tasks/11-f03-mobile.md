@@ -1,7 +1,6 @@
-# Task 11 - F03 mobile
+# Task 11 - F03 mobile gestión ganadera
 
-Leer exactamente:
-- PROJECT-MAP.md
+## Leer
 - specs/features/F03-gestion-ganadera.md
 - specs/ui/UX01-Design-System.md
 - mobile/App.tsx
@@ -17,5 +16,22 @@ Leer exactamente:
 - mobile/src/components/FormField.tsx
 - mobile/src/components/feedback.tsx
 
-Crear exactamente los seis screens F03 mobile listados en PROJECT-MAP.md.
-Wire desde detalle del establecimiento/App. Español. Sin fake data. No tests.
+## Crear
+- mobile/src/screens/LivestockScreen.tsx
+- mobile/src/screens/HerdDetailScreen.tsx
+- mobile/src/screens/CreateHerdScreen.tsx
+- mobile/src/screens/CreateAnimalScreen.tsx
+- mobile/src/screens/RegisterWeighingScreen.tsx
+- mobile/src/screens/RegisterLivestockEventScreen.tsx
+
+## Implementar
+- navegación desde establecimiento;
+- listar/crear rodeos;
+- detalle de rodeo;
+- crear animal;
+- registrar pesaje;
+- registrar evento;
+- español y UX01;
+- consumir backend real, sin fake data.
+
+No tests.
