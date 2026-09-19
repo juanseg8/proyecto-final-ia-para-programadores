@@ -1,3 +1,8 @@
+param(
+  [ValidateSet("01A","01B","02","03","04","05")]
+  [string]$StartFrom = "01A"
+)
+
 $ErrorActionPreference = "Stop"
 
 $branch = git branch --show-current
@@ -11,13 +16,20 @@ if (git status --porcelain) {
 }
 
 $tasks = @(
-  @{ Id = "01A"; File = "night-tasks/01a-home-login-encoding.md"; Commit = "night: fix Home and Login encoding" },
-  @{ Id = "01B"; File = "night-tasks/01b-establishment-encoding.md"; Commit = "night: fix establishment screen encoding" },
-  @{ Id = "02"; File = "night-tasks/02-navigation-refresh.md"; Commit = "night: stabilize establishment navigation and refresh" },
-  @{ Id = "03"; File = "night-tasks/03-georef-searchable-select.md"; Commit = "night: consolidate GeoRef searchable selectors" },
-  @{ Id = "04"; File = "night-tasks/04-ui-foundation-cleanup.md"; Commit = "night: normalize mobile UI foundation" },
-  @{ Id = "05"; File = "night-tasks/05-map-sanity.md"; Commit = "night: harden map flow code" }
+  @{ Id = "01A"; File = "night-tasks/01a-home-login-encoding.md"; Commit = "night: fix Home and Login encoding"; Tests = @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx") },
+  @{ Id = "01B"; File = "night-tasks/01b-establishment-encoding.md"; Commit = "night: fix establishment screen encoding"; Tests = @("__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/EstablishmentFormScreen.test.tsx","__tests__/RegisterScreen.test.tsx","__tests__/MapLocationPicker.test.tsx") },
+  @{ Id = "02"; File = "night-tasks/02-navigation-refresh.md"; Commit = "night: stabilize establishment navigation and refresh"; Tests = @("__tests__/EstablishmentNavigationRefresh.test.tsx","__tests__/navigation.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/EstablishmentFormScreen.test.tsx") },
+  @{ Id = "03"; File = "night-tasks/03-georef-searchable-select.md"; Commit = "night: consolidate GeoRef searchable selectors"; Tests = @("__tests__/georefService.test.ts","__tests__/EstablishmentFormScreen.test.tsx","__tests__/components.test.tsx") },
+  @{ Id = "04"; File = "night-tasks/04-ui-foundation-cleanup.md"; Commit = "night: normalize mobile UI foundation"; Tests = @("__tests__/HomeScreen.test.tsx","__tests__/LoginScreen.test.tsx","__tests__/RegisterScreen.test.tsx","__tests__/EstablishmentListScreen.test.tsx","__tests__/EstablishmentDetailScreen.test.tsx","__tests__/components.test.tsx","__tests__/theme.test.ts") },
+  @{ Id = "05"; File = "night-tasks/05-map-sanity.md"; Commit = "night: harden map flow code"; Tests = @("__tests__/MapLocationPicker.test.tsx","__tests__/EstablishmentFormScreen.test.tsx") }
 )
+
+$startIndex = -1
+for ($i = 0; $i -lt $tasks.Count; $i++) {
+  if ($tasks[$i].Id -eq $StartFrom) { $startIndex = $i; break }
+}
+if ($startIndex -lt 0) { throw "Unknown StartFrom task: $StartFrom" }
+$tasks = $tasks[$startIndex..($tasks.Count - 1)]
 
 function Get-ChangedPaths([string]$beforeSha) {
   $paths = @()
@@ -50,26 +62,27 @@ function Assert-AllowedPaths([string[]]$paths) {
   }
 }
 
-function Run-MobileGate {
+function Run-MobileGate([string[]]$testFiles) {
   Push-Location mobile
   try {
     Write-Host "Running TypeScript gate..."
     npx tsc --noEmit
     if ($LASTEXITCODE -ne 0) { throw "TypeScript gate failed." }
 
-    Write-Host "Running Jest gate..."
-    npx jest --runInBand
-    if ($LASTEXITCODE -ne 0) { throw "Jest gate failed." }
+    Write-Host "Running focused Jest gate..."
+    npx jest --runInBand --runTestsByPath @testFiles
+    if ($LASTEXITCODE -ne 0) { throw "Focused Jest gate failed." }
   }
   finally {
     Pop-Location
   }
 }
 
-Write-Host "== Agro Intelligence NIGHT BUILD V3 =="
+Write-Host "== Agro Intelligence NIGHT BUILD V4 =="
 Write-Host "Branch: $branch"
 Write-Host "Model: ollama/agro-coder"
 Write-Host "Scope: mobile/ only, one small task per OpenCode run"
+Write-Host "Starting from task: $StartFrom"
 
 foreach ($task in $tasks) {
   Write-Host ""
@@ -100,7 +113,7 @@ IMPORTANT:
 
   $paths = @(Get-ChangedPaths $before)
   Assert-AllowedPaths $paths
-  Run-MobileGate
+  Run-MobileGate $task.Tests
 
   git add mobile NIGHT_REPORT.md
 
@@ -114,9 +127,19 @@ IMPORTANT:
 }
 
 Write-Host ""
-Write-Host "== Final mobile gate ==" -ForegroundColor Cyan
-Run-MobileGate
+Write-Host "== Final full mobile gate ==" -ForegroundColor Cyan
+Push-Location mobile
+try {
+  npx tsc --noEmit
+  if ($LASTEXITCODE -ne 0) { throw "Final TypeScript gate failed." }
+
+  npx jest --runInBand
+  if ($LASTEXITCODE -ne 0) { throw "Final Jest gate failed." }
+}
+finally {
+  Pop-Location
+}
 
 Write-Host ""
-Write-Host "NIGHT BUILD V3 finished." -ForegroundColor Green
+Write-Host "NIGHT BUILD V4 finished." -ForegroundColor Green
 Write-Host "No push was performed."
