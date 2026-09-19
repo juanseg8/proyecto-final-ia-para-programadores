@@ -1,25 +1,30 @@
-# Night Task 03 - GeoRef and SearchableSelect
+# Task 03 - GeoRef and SearchableSelect
+
+## Authoritative specs
+Read exactly:
+- specs/features/F02-Establecimiento.md
+- specs/ui/UX01-Design-System.md
+
+## Production files to inspect
+- mobile/src/services/georefService.ts
+- mobile/src/screens/EstablishmentFormScreen.tsx
+- mobile/src/components/index.ts
+- mobile/src/components/FormField.tsx
+- mobile/src/components/AppInput.tsx
+- mobile/src/theme/theme.ts
+
+Read additional mobile production files only if directly imported and necessary.
 
 ## Goal
-Make Province/Locality selection coherent and reusable in the existing mobile architecture.
-
-## Required
-- use `mobile/src/services/georefService.ts`;
-- implement/reuse SearchableSelect under `mobile/src/components/`;
+Implement/reuse a real searchable Province/Locality selector:
+- reusable SearchableSelect under mobile/src/components/;
 - React Native primitives only;
-- Modal is acceptable; do not add a bottom-sheet dependency;
 - searchable options;
 - selected/loading/error/retry/disabled states;
 - locality disabled until province is selected;
 - changing province clears locality;
-- canonical payload remains province:string and locality:string.
+- backend payload remains province:string and locality:string;
+- no silent fallback to free text.
 
-## Forbidden
-- reading/editing tests;
-- HTML elements;
-- root src/;
-- backend changes;
-- GeoRef IDs in backend payload;
-- silent fallback to free-text input.
-
-Compile with TypeScript, update Task 03 in NIGHT_REPORT.md, then stop.
+## Rules
+Do not search for alternate specs. Do not read directories. Do not read/edit tests. Update NIGHT_REPORT.md.
