@@ -42,7 +42,8 @@
           "night-agent-write-probe.txt": "allow",
           "mobile/__tests__/**": "deny",
           "backend/**/*.spec.ts": "deny",
-          "backend/test/**": "deny"
+          "backend/test/**": "deny",
+          "night-agent-rewrite-probe.txt": "allow"
         },
         "glob": "allow",
         "grep": "allow",
@@ -60,6 +61,20 @@
         "websearch": "deny",
         "external_directory": "deny",
         "question": "deny"
+      },
+      "prompt": "{file:./.opencode/prompts/build.txt}",
+      "tools": {
+        "read": true,
+        "write": true,
+        "edit": false,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "lsp": true,
+        "bash": true,
+        "task": false,
+        "webfetch": false,
+        "websearch": false
       }
     }
   }

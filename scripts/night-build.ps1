@@ -11,21 +11,44 @@ if (-not $branch) { throw "Not inside a git repository." }
 if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-refactor") { throw "Use dedicated night-build branch." }
 if (git status --porcelain) { throw "Working tree is not clean." }
 
-Write-Host "NIGHT BUILD write probe..." -ForegroundColor Cyan
+Write-Host "NIGHT BUILD write probes..." -ForegroundColor Cyan
+
+# Probe 1: create a new file through OpenCode write.
 $probeFile = "night-agent-write-probe.txt"
 if (Test-Path $probeFile) { Remove-Item $probeFile -Force }
 $probePrompt = @"
 Create exactly one file at repository root named night-agent-write-probe.txt with exactly:
 WRITE_OK
-Do not read or modify any other file. Stop immediately after creating it.
+Use the write tool. Do not read or modify any other file. Stop immediately after creating it.
 "@
-& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build write probe" $probePrompt
-if ($LASTEXITCODE -ne 0) { throw "OpenCode write probe process failed." }
+& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build create probe" $probePrompt
+if ($LASTEXITCODE -ne 0) { throw "OpenCode create probe process failed." }
 if (-not (Test-Path $probeFile)) { throw "OpenCode did not create the write probe." }
-if ((Get-Content $probeFile -Raw).Trim() -ne "WRITE_OK") { throw "Write probe content is invalid." }
+if ((Get-Content $probeFile -Raw).Trim() -ne "WRITE_OK") { throw "Create probe content is invalid." }
 Remove-Item $probeFile -Force
-if (git status --porcelain) { throw "Write probe left unexpected repository changes." }
-Write-Host "WRITE PROBE GREEN" -ForegroundColor Green
+
+# Probe 2: overwrite an EXISTING file through OpenCode write.
+$rewriteProbe = "night-agent-rewrite-probe.txt"
+Set-Content -Path $rewriteProbe -Value "REWRITE_BEFORE" -NoNewline
+$rewritePrompt = @"
+Read night-agent-rewrite-probe.txt, then replace the COMPLETE file using the write tool so its exact content becomes:
+REWRITE_OK
+The edit tool is disabled. Do not touch any other file. Stop after the write.
+"@
+& opencode run --agent build --model ollama/agro-coder --auto --title "Night Build overwrite probe" $rewritePrompt
+if ($LASTEXITCODE -ne 0) {
+  Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
+  throw "OpenCode overwrite probe process failed."
+}
+if (-not (Test-Path $rewriteProbe)) { throw "OpenCode removed the overwrite probe unexpectedly." }
+if ((Get-Content $rewriteProbe -Raw).Trim() -ne "REWRITE_OK") {
+  Remove-Item $rewriteProbe -Force -ErrorAction SilentlyContinue
+  throw "OpenCode cannot overwrite existing files through write. Night Build stopped before product work."
+}
+Remove-Item $rewriteProbe -Force
+
+if (git status --porcelain) { throw "Write probes left unexpected repository changes." }
+Write-Host "WRITE PROBES GREEN (create + overwrite)" -ForegroundColor Green
 
 $tasks = @(
   @{ Id="03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
@@ -107,9 +130,9 @@ function Has-ProductionChanges([string]$before) {
 
 function Invoke-TaskAgent([hashtable]$task,[string]$taskText,[bool]$retry) {
   if($retry){
-    $instruction="A previous attempt returned without implementation. Do not explain or plan again. Use edit/write tools now."
+    $instruction="A previous attempt returned without implementation. Do not explain or plan again. The edit tool is disabled: use read + write now. Rewrite complete existing files when necessary."
   } else {
-    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. Use edit/write tools for required changes."
+    $instruction="Implement the task. Do not stop after analysis or merely describe what you will do. The edit tool is disabled: use read + write. For an existing file, read it fully and then write the complete updated file."
   }
 
   $prompt=@"
@@ -161,7 +184,7 @@ function Gate-With-Repair([hashtable]$task,[string]$before) {
     $err=[string]$result.Output
     if($err.Length -gt 12000){$err=$err.Substring($err.Length-12000)}
     $repair=@"
-Repair ONLY the compile errors below in production code changed/required by Task $($task.Id).
+Repair ONLY the compile errors below in production code changed/required by Task $($task.Id). The edit tool is disabled: read affected files and use write to replace the complete corrected file.
 Do not edit tests, broaden scope, commit or push.
 
 $err
