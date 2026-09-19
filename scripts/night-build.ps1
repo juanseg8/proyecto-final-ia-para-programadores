@@ -12,19 +12,19 @@ if ($branch -eq "master" -or $branch -eq "main" -or $branch -eq "lean-agentic-re
 if (git status --porcelain) { throw "Working tree is not clean." }
 
 $tasks = @(
-  @{ Id="02"; File="night-tasks/02-navigation-refresh.md"; Gate="mobile"; Commit="night: stabilize F02 navigation and refresh" },
-  @{ Id="03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
-  @{ Id="04"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
-  @{ Id="05"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
-  @{ Id="10"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
-  @{ Id="11"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
-  @{ Id="12"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
-  @{ Id="13"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
-  @{ Id="14"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
-  @{ Id="15"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
-  @{ Id="16"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
-  @{ Id="17"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
-  @{ Id="18"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
+  @{ Id="02"; Agent="night-02"; File="night-tasks/02-navigation-refresh.md"; Gate="mobile"; Commit="night: stabilize F02 navigation and refresh" },
+  @{ Id="03"; Agent="night-03"; File="night-tasks/03-georef-searchable-select.md"; Gate="mobile"; Commit="night: consolidate GeoRef searchable selectors" },
+  @{ Id="04"; Agent="night-04"; File="night-tasks/04-ui-foundation-cleanup.md"; Gate="mobile"; Commit="night: normalize mobile UI foundation" },
+  @{ Id="05"; Agent="night-05"; File="night-tasks/05-map-sanity.md"; Gate="mobile"; Commit="night: harden map flow code" },
+  @{ Id="10"; Agent="night-10"; File="night-tasks/10-f03-backend.md"; Gate="backend"; Commit="night: implement F03 livestock backend" },
+  @{ Id="11"; Agent="night-11"; File="night-tasks/11-f03-mobile.md"; Gate="mobile"; Commit="night: implement F03 livestock mobile" },
+  @{ Id="12"; Agent="night-12"; File="night-tasks/12-f04-indicators.md"; Gate="backend"; Commit="night: implement deterministic indicators" },
+  @{ Id="13"; Agent="night-13"; File="night-tasks/13-f05-benchmark.md"; Gate="backend"; Commit="night: implement anonymous benchmark" },
+  @{ Id="14"; Agent="night-14"; File="night-tasks/14-f06-alerts.md"; Gate="backend"; Commit="night: implement deterministic alerts" },
+  @{ Id="15"; Agent="night-15"; File="night-tasks/15-f07-weather.md"; Gate="both"; Commit="night: integrate weather context" },
+  @{ Id="16"; Agent="night-16"; File="night-tasks/16-f08-ai.md"; Gate="both"; Commit="night: implement Agro AI assistant" },
+  @{ Id="17"; Agent="night-17"; File="night-tasks/17-f09-dashboard.md"; Gate="both"; Commit="night: integrate intelligence dashboard" },
+  @{ Id="18"; Agent="night-18"; File="night-tasks/18-mvp-polish.md"; Gate="both"; Commit="night: finalize MVP integration" }
 )
 
 function Get-ChangedPaths([string]$before) {
@@ -147,7 +147,7 @@ Rules:
 - stop only after one of those two outcomes.
 "@
 
-  & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id) completion retry" $retryPrompt
+  & opencode run --agent $task.Agent --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id) completion retry" $retryPrompt
   if ($LASTEXITCODE -ne 0) { throw "OpenCode completion retry failed on Task $($task.Id)." }
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
 }
@@ -203,7 +203,7 @@ Use only repository-relative paths copied verbatim from the task and PROJECT-MAP
 Never construct absolute Windows paths and never Read a directory.
 Do not search for alternate tasks. Do not read or edit tests. Do not commit or push.
 "@
-  & opencode run --agent night-builder --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
+  & opencode run --agent $task.Agent --model ollama/agro-coder --auto --title "Agro MVP Task $($task.Id)" $prompt
   if($LASTEXITCODE -ne 0){throw "OpenCode failed on Task $($task.Id)."}
 
   Assert-Paths @(Get-ChangedPaths $before) $task.Id
