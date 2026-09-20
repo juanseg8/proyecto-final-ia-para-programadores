@@ -7,7 +7,7 @@ export class EstablishmentOwnershipGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const establishmentId = request.params.id;
+    const establishmentId = request.params.id || request.params.establishmentId;
     const userId = request.user.userId;
 
     if (!establishmentId) {
@@ -22,7 +22,7 @@ export class EstablishmentOwnershipGuard implements CanActivate {
 
     // Attach to request so controller doesn't need to fetch it again
     request.establishment = establishment;
-    
+
     return true;
   }
 }

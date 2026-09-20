@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { EstablishmentOwnershipGuard } from '../establishments/guards/establishment-ownership.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { CreateHerdDto, UpdateHerdDto } from './dto/herd.dto';
 import { CreateAnimalDto, UpdateAnimalDto } from './dto/animal.dto';
@@ -19,7 +20,7 @@ import { CreateLivestockEventDto } from './dto/livestock-event.dto';
 import { LivestockService } from './livestock.service';
 
 @Controller('establishments/:establishmentId')
-@UseGuards(EstablishmentOwnershipGuard)
+@UseGuards(JwtAuthGuard, EstablishmentOwnershipGuard)
 export class LivestockController {
   constructor(private readonly livestockService: LivestockService) {}
 
