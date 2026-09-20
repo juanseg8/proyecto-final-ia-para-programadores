@@ -1,6 +1,7 @@
 param(
   [string]$StartFrom = "05",
-  [int]$MaxCompileRepairAttempts = 2
+  [int]$MaxCompileRepairAttempts = 2,
+  [int]$MaxRescueAttempts = 1
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,12 +15,21 @@ try {
   $branch = (git branch --show-current).Trim()
   if (-not $branch) { Fail "Not inside a git repository." }
   if ($branch -in @("master","main","lean-agentic-refactor")) { Fail "Use a dedicated build branch." }
-  if (git status --porcelain) { Fail "Working tree is not clean. Commit/stash/restore changes before Night Build." }
+  if (git status --porcelain --untracked-files=all) { Fail "Working tree is not clean. Commit/stash/restore changes before Night Build." }
 
   if (-not (Get-Command aider -ErrorAction SilentlyContinue)) { Fail "Aider is not installed or not available in PATH." }
   if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) { Fail "Ollama is not installed or not available in PATH." }
-  & ollama show agro-coder *> $null
-  if ($LASTEXITCODE -ne 0) { Fail "Ollama model 'agro-coder' is not available." }
+
+  $WorkerAiderModel = "ollama_chat/agro-coder"
+  $WorkerOllamaModel = "agro-coder"
+  $RescueAiderModel = "ollama_chat/deepseek-coder-v2:16b"
+  $RescueOllamaModel = "deepseek-coder-v2:16b"
+
+  & ollama show $WorkerOllamaModel *> $null
+  if ($LASTEXITCODE -ne 0) { Fail "Ollama model '$WorkerOllamaModel' is not available." }
+  & ollama show $RescueOllamaModel *> $null
+  if ($LASTEXITCODE -ne 0) { Fail "Ollama rescue model '$RescueOllamaModel' is not available." }
+
   $env:OLLAMA_API_BASE = "http://127.0.0.1:11434"
 
   function B([string]$Id,[string]$Task,[string]$Name,[string]$TaskFile,[string]$Gate,[string[]]$Editable,[string[]]$Read,[string]$Goal,[bool]$AllowNoChanges=$false) {
@@ -248,7 +258,9 @@ try {
 
   function Get-ChangedPaths([string]$before) {
     $paths = New-Object System.Collections.Generic.List[string]
-    foreach ($p in @(git diff --name-only $before)) { if ($p) { $paths.Add((N $p)) } }
+    foreach ($p in @(git diff --name-only $before)) {
+      if ($p) { $paths.Add((N $p)) }
+    }
     foreach ($line in @(git status --porcelain --untracked-files=all)) {
       if ($line.Length -lt 4) { continue }
       $p = $line.Substring(3).Trim()
@@ -258,14 +270,40 @@ try {
     @($paths | Sort-Object -Unique)
   }
 
-  function Assert-BlockPaths([hashtable]$block,[string]$before) {
+  function Get-ForbiddenChanges([hashtable]$block,[string]$before) {
     $allowed = @($block.Editable | ForEach-Object { N $_ })
-    $bad = @()
-    foreach ($p in @(Get-ChangedPaths $before)) { if ($p -notin $allowed) { $bad += $p } }
-    if ($bad.Count -gt 0) {
-      $bad | ForEach-Object { Write-Host "FORBIDDEN CHANGE: $_" -ForegroundColor Red }
-      Fail "Aider changed files outside block $($block.Id)."
+    @((Get-ChangedPaths $before) | Where-Object { $_ -notin $allowed })
+  }
+
+  function Restore-ForbiddenChanges([hashtable]$block,[string]$before) {
+    $bad = @(Get-ForbiddenChanges $block $before)
+    if ($bad.Count -eq 0) {
+      return @{ HadViolation=$false; Restored=@() }
     }
+
+    Write-Host "Scope violation detected in block $($block.Id). Restoring forbidden paths..." -ForegroundColor Yellow
+    foreach ($p in $bad) {
+      Write-Host "RESTORE FORBIDDEN: $p" -ForegroundColor Red
+
+      & git ls-files --error-unmatch -- "$p" *> $null
+      $tracked = ($LASTEXITCODE -eq 0)
+
+      if ($tracked) {
+        & git restore --source=HEAD --staged --worktree -- "$p"
+        if ($LASTEXITCODE -ne 0) { Fail "Could not restore forbidden tracked path '$p'." }
+      }
+      elseif (Test-Path -LiteralPath $p) {
+        Remove-Item -LiteralPath $p -Force -Recurse
+      }
+    }
+
+    $stillBad = @(Get-ForbiddenChanges $block $before)
+    if ($stillBad.Count -gt 0) {
+      $stillBad | ForEach-Object { Write-Host "STILL FORBIDDEN: $_" -ForegroundColor Red }
+      Fail "Could not restore all forbidden changes for block $($block.Id)."
+    }
+
+    @{ HadViolation=$true; Restored=$bad }
   }
 
   function Invoke-Cmd([string]$working,[string]$command) {
@@ -275,53 +313,187 @@ try {
       $code = $LASTEXITCODE
       $out | ForEach-Object { Write-Host $_ }
       @{ Success=($code -eq 0); Output=($out -join [Environment]::NewLine) }
-    } finally { Pop-Location }
+    }
+    finally { Pop-Location }
   }
 
   function Invoke-Gate([string]$gate) {
     $all=@(); $ok=$true
     if ($gate -eq "backend" -or $gate -eq "both") {
       Write-Host "Backend build..." -ForegroundColor Cyan
-      $r=Invoke-Cmd "backend" "npm run build"; $all += "BACKEND:`n"+$r.Output
+      $r=Invoke-Cmd "backend" "npm run build"
+      $all += "BACKEND:`n"+$r.Output
       if (-not $r.Success) { $ok=$false }
     }
     if ($ok -and ($gate -eq "mobile" -or $gate -eq "both")) {
       Write-Host "Mobile TypeScript..." -ForegroundColor Cyan
-      $r=Invoke-Cmd "mobile" "npx tsc --noEmit -p tsconfig.night.json"; $all += "MOBILE:`n"+$r.Output
+      $r=Invoke-Cmd "mobile" "npx tsc --noEmit -p tsconfig.night.json"
+      $all += "MOBILE:`n"+$r.Output
       if (-not $r.Success) { $ok=$false }
     }
     @{ Success=$ok; Output=($all -join "`n") }
   }
 
-  function New-PromptFile([string]$id,[string]$body) {
-    $dir=Join-Path $env:TEMP "agro-night-build"; New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $file=Join-Path $dir "block-$id-$([Guid]::NewGuid().ToString('N')).txt"
-    [System.IO.File]::WriteAllText($file,$body,[System.Text.UTF8Encoding]::new($false)); $file
+  function Invoke-StaticChecks([hashtable]$block,[string]$before) {
+    $errors = New-Object System.Collections.Generic.List[string]
+    $changed = @(Get-ChangedPaths $before)
+
+    foreach ($p in $changed) {
+      if (-not (Test-Path -LiteralPath $p -PathType Leaf)) { continue }
+      if ($p -notmatch '\.(ts|tsx|js|jsx)$') { continue }
+
+      $content = Get-Content -Raw -LiteralPath $p
+
+      if ($content -match '@nestjs/typeORM') {
+        $errors.Add("$p contains invalid @nestjs/typeORM casing; use @nestjs/typeorm.")
+      }
+
+      if ($p.StartsWith("mobile/") -and $content -match 'styled-components') {
+        $errors.Add("$p introduces styled-components, which is not part of this mobile project.")
+      }
+    }
+
+    if ($block.Id -in @("10C","10D")) {
+      $servicePath = "backend/src/livestock/livestock.service.ts"
+      if (Test-Path $servicePath) {
+        $service = Get-Content -Raw $servicePath
+        if ($service -match ':\s*any\b') { $errors.Add("F03 livestock service contains ': any'.") }
+        if ($service -match '\bdeleteAnimal\s*\(') { $errors.Add("F03 livestock service contains deleteAnimal(), which is outside F03.") }
+      }
+    }
+
+    if ($block.Id -in @("16B","16C","16D","16E")) {
+      foreach ($p in @(Get-ChildItem "backend/src/ai" -Filter "*.ts" -File -ErrorAction SilentlyContinue | ForEach-Object { N ($_.FullName.Substring($repoRoot.Length + 1)) })) {
+        $content = Get-Content -Raw -LiteralPath $p
+        if ($content -match '@InjectRepository|Repository\s*<|\bDataSource\b|\bQueryBuilder\b|from\s+["'']typeorm["'']') {
+          $errors.Add("$p violates INV-06: backend/src/ai must not access TypeORM/DB directly.")
+        }
+      }
+    }
+
+    if ($errors.Count -gt 0) {
+      $errors | ForEach-Object { Write-Host "STATIC CHECK: $_" -ForegroundColor Red }
+      return @{ Success=$false; Output=($errors -join [Environment]::NewLine) }
+    }
+
+    @{ Success=$true; Output="Static checks passed." }
   }
 
-  function Invoke-AiderBlock([hashtable]$block,[string]$prompt,[string[]]$editableOverride=@()) {
+  function Invoke-Validation([hashtable]$block,[string]$before) {
+    $gate = Invoke-Gate $block.Gate
+    if (-not $gate.Success) { return $gate }
+
+    $checks = Invoke-StaticChecks $block $before
+    if (-not $checks.Success) {
+      return @{ Success=$false; Output=("STATIC CHECKS:`n" + $checks.Output) }
+    }
+
+    @{ Success=$true; Output=$gate.Output }
+  }
+
+  function New-PromptFile([string]$id,[string]$body) {
+    $dir=Join-Path $env:TEMP "agro-night-build"
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $file=Join-Path $dir "block-$id-$([Guid]::NewGuid().ToString('N')).txt"
+    [System.IO.File]::WriteAllText($file,$body,[System.Text.UTF8Encoding]::new($false))
+    $file
+  }
+
+  function Switch-LocalModel([string]$role) {
+    if ($role -eq "worker") {
+      & ollama stop $RescueOllamaModel *> $null
+      Start-Sleep -Seconds 1
+      return
+    }
+    if ($role -eq "rescue") {
+      & ollama stop $WorkerOllamaModel *> $null
+      Start-Sleep -Seconds 1
+      return
+    }
+    Fail "Unknown model role '$role'."
+  }
+
+  function Invoke-AiderBlock(
+    [hashtable]$block,
+    [string]$prompt,
+    [string]$role="worker",
+    [string[]]$editableOverride=@()
+  ) {
     $promptFile=New-PromptFile $block.Id $prompt
     $editable=if($editableOverride.Count -gt 0){$editableOverride}else{@($block.Editable)}
+
+    if ($role -eq "worker") {
+      $model=$WorkerAiderModel
+    }
+    elseif ($role -eq "rescue") {
+      $model=$RescueAiderModel
+    }
+    else {
+      Fail "Unknown Aider role '$role'."
+    }
+
+    Switch-LocalModel $role
+
     $args=@(
-      "--model","ollama_chat/agro-coder","--model-settings-file","local-ai/aider-model-settings.yml","--message-file",$promptFile,
-      "--yes-always","--no-auto-commits","--no-dirty-commits","--no-auto-lint","--no-auto-test","--no-gitignore","--no-check-update",
-      "--no-show-release-notes","--no-show-model-warnings","--analytics-disable","--no-suggest-shell-commands","--map-tokens","0","--encoding","utf-8","--edit-format","whole"
+      "--model",$model,
+      "--model-settings-file","local-ai/aider-model-settings.yml",
+      "--message-file",$promptFile,
+      "--yes-always",
+      "--no-auto-commits",
+      "--no-dirty-commits",
+      "--no-auto-lint",
+      "--no-auto-test",
+      "--no-gitignore",
+      "--no-check-update",
+      "--no-show-release-notes",
+      "--no-show-model-warnings",
+      "--analytics-disable",
+      "--no-suggest-shell-commands",
+      "--map-tokens","0",
+      "--encoding","utf-8",
+      "--edit-format","whole"
     )
-    $readPaths=@("AGENTS.md",$block.TaskFile)+@($block.Read)
-    foreach($p in @($readPaths|Sort-Object -Unique)){ if(Test-Path $p){$args+=@("--read",$p)} }
-    foreach($p in @($editable|Sort-Object -Unique)){ $args+=@("--file",$p) }
-    Write-Host "Aider block $($block.Id): $($block.Name)" -ForegroundColor DarkCyan
+
+    # Deliberately DO NOT read the broad night-task file here.
+    # Each micro-block receives only AGENTS.md + its narrow read-only context.
+    $readPaths=@("AGENTS.md")+@($block.Read)
+    foreach($p in @($readPaths|Sort-Object -Unique)) {
+      if(Test-Path $p){$args+=@("--read",$p)}
+    }
+    foreach($p in @($editable|Sort-Object -Unique)) {
+      $args+=@("--file",$p)
+    }
+
+    Write-Host "Aider $role block $($block.Id): $($block.Name)" -ForegroundColor DarkCyan
+    Write-Host "Model: $model" -ForegroundColor DarkCyan
     Write-Host "Editable: $($editable.Count) | Read-only: $(@($readPaths|Sort-Object -Unique).Count)" -ForegroundColor DarkCyan
-    try { & aider @args; $code=$LASTEXITCODE } finally { Remove-Item $promptFile -Force -ErrorAction SilentlyContinue }
-    if($code -ne 0){ Fail "Aider failed on block $($block.Id) with exit code $code." }
+
+    try {
+      & aider @args
+      $code=$LASTEXITCODE
+    }
+    finally {
+      Remove-Item $promptFile -Force -ErrorAction SilentlyContinue
+    }
+
+    @{ Success=($code -eq 0); ExitCode=$code }
+  }
+
+  function Get-EditableList([hashtable]$block) {
+    (@($block.Editable | ForEach-Object { "- $(N $_)" })) -join "`n"
   }
 
   function Invoke-Implementation([hashtable]$block) {
+    $editableList=Get-EditableList $block
     $prompt=@"
 You are implementing one small isolated code block for Agro Intelligence Network.
 
+ABSOLUTE EDIT ALLOWLIST:
+$editableList
+
 Hard constraints:
-- Work ONLY on editable files in this Aider session.
+- Work ONLY on the files in the edit allowlist above.
+- Do not request, create, edit, rename or delete any other file.
 - Do not create alternate folders or duplicate paths.
 - Preserve unrelated behavior.
 - Do not edit tests, commit, push or install packages.
@@ -330,40 +502,166 @@ Hard constraints:
 - No fake data, fake metrics, dead UI or production emoji iconography.
 - User-facing text in Spanish.
 - Apply real code changes; do not only explain.
+- Follow the feature spec/read-only files in this session, but ONLY implement the narrow GOAL below.
+- Ignore broader future work that may be mentioned in specs.
 - This block is intentionally small to stay under the local model context window.
 
-Task source: $($block.TaskFile)
 Block $($block.Id) - $($block.Name)
 
 GOAL:
 $($block.Goal)
 "@
-    Invoke-AiderBlock $block $prompt
+    Invoke-AiderBlock $block $prompt "worker"
   }
 
-  function Repair-Block([hashtable]$block,[string]$compilerOutput,[string]$before) {
-    $allowed=@($block.Editable|ForEach-Object{N $_}); $changed=@(Get-ChangedPaths $before)
-    $editable=@($changed|Where-Object{$_ -in $allowed}); if($editable.Count -eq 0){$editable=@($block.Editable)}
-    $err=[string]$compilerOutput; if($err.Length -gt 7000){$err=$err.Substring($err.Length-7000)}
-    $prompt=@"
-Repair ONLY compile/type errors caused by block $($block.Id). Do not broaden scope, redesign, add dependencies, edit tests, commit or push. Fix the smallest valid set of issues.
+  function Invoke-WorkerRepair([hashtable]$block,[string]$failureOutput,[string]$before) {
+    $allowed=@($block.Editable|ForEach-Object{N $_})
+    $changed=@(Get-ChangedPaths $before)
+    $editable=@($changed|Where-Object{$_ -in $allowed})
+    if($editable.Count -eq 0){$editable=@($block.Editable)}
 
-COMPILER OUTPUT:
+    $err=[string]$failureOutput
+    if($err.Length -gt 7000){$err=$err.Substring($err.Length-7000)}
+    $editableList=(@($editable | ForEach-Object { "- $(N $_)" })) -join "`n"
+
+    $prompt=@"
+Repair ONLY the current block. Do not broaden scope or redesign.
+
+ABSOLUTE EDIT ALLOWLIST:
+$editableList
+
+Block $($block.Id) - $($block.Name)
+GOAL:
+$($block.Goal)
+
+Rules:
+- Fix the smallest valid set of issues.
+- Do not create/edit files outside the allowlist.
+- Do not add dependencies, edit tests, commit or push.
+- Preserve already-correct behavior and spec invariants.
+
+CURRENT FAILURE:
 $err
 "@
-    Invoke-AiderBlock $block $prompt $editable
+    Invoke-AiderBlock $block $prompt "worker" $editable
   }
 
-  function Gate-With-Repair([hashtable]$block,[string]$before) {
-    for($attempt=0;$attempt -le $MaxCompileRepairAttempts;$attempt++){
-      $result=Invoke-Gate $block.Gate
-      if($result.Success){Write-Host "GREEN: block $($block.Id)" -ForegroundColor Green; return}
-      if($attempt -eq $MaxCompileRepairAttempts){Fail "Block $($block.Id) still fails after $MaxCompileRepairAttempts repair attempts."}
-      Assert-BlockPaths $block $before
-      Write-Host "Compile repair $($attempt+1)/$MaxCompileRepairAttempts for $($block.Id)..." -ForegroundColor Yellow
-      Repair-Block $block $result.Output $before
-      Assert-BlockPaths $block $before
+  function Invoke-Rescue([hashtable]$block,[string]$failureOutput,[string]$before,[string[]]$scopeRestored=@()) {
+    $allowed=@($block.Editable|ForEach-Object{N $_})
+    $changed=@(Get-ChangedPaths $before)
+    $editable=@($changed|Where-Object{$_ -in $allowed})
+    if($editable.Count -eq 0){$editable=@($block.Editable)}
+
+    $err=[string]$failureOutput
+    if($err.Length -gt 9000){$err=$err.Substring($err.Length-9000)}
+    $editableList=(@($editable | ForEach-Object { "- $(N $_)" })) -join "`n"
+    $scopeText=if($scopeRestored.Count -gt 0){($scopeRestored -join ", ")}else{"none"}
+
+    $prompt=@"
+You are the LOCAL RESCUE MODEL for one failed micro-block. Repair it conservatively.
+
+ABSOLUTE EDIT ALLOWLIST:
+$editableList
+
+Block $($block.Id) - $($block.Name)
+GOAL:
+$($block.Goal)
+
+Critical rules:
+- Edit ONLY the allowlisted files. Never ask to add another file.
+- The broad night-task file is intentionally NOT provided. Do not infer future work.
+- Follow the feature spec/read-only context exactly.
+- Fix only what is required for this block to satisfy its goal, compile/type-check, and preserve invariants.
+- Do not redesign architecture, add dependencies, edit tests, commit or push.
+- Do not use 'any' to silence TypeScript errors when a real project type/DTO exists.
+- NestJS uses @nestjs/typeorm in lowercase.
+- Preserve ownership/security checks; foreign nested resources must not leak across establishments.
+- No fake data or fake metrics.
+
+Forbidden paths automatically restored before rescue: $scopeText
+
+FAILURE TO REPAIR:
+$err
+"@
+    Invoke-AiderBlock $block $prompt "rescue" $editable
+  }
+
+  function Complete-Block([hashtable]$block,[string]$before) {
+    $scopeRestored = New-Object System.Collections.Generic.List[string]
+
+    $impl=Invoke-Implementation $block
+    $scope=Restore-ForbiddenChanges $block $before
+    foreach($p in @($scope.Restored)){[void]$scopeRestored.Add($p)}
+
+    $changed=@(Get-ChangedPaths $before)
+    $failure=""
+
+    if(-not $impl.Success){
+      $failure="Worker Aider exited with code $($impl.ExitCode)."
     }
+    elseif($changed.Count -eq 0 -and -not $block.AllowNoChanges){
+      $failure="Worker produced no changes for a block that requires changes."
+    }
+    else {
+      $result=Invoke-Validation $block $before
+      if($result.Success){
+        Write-Host "GREEN: block $($block.Id)" -ForegroundColor Green
+        return
+      }
+      $failure=$result.Output
+    }
+
+    for($attempt=1;$attempt -le $MaxCompileRepairAttempts;$attempt++){
+      Write-Host "Worker repair $attempt/$MaxCompileRepairAttempts for $($block.Id)..." -ForegroundColor Yellow
+      $repair=Invoke-WorkerRepair $block $failure $before
+      $scope=Restore-ForbiddenChanges $block $before
+      foreach($p in @($scope.Restored)){if(-not $scopeRestored.Contains($p)){[void]$scopeRestored.Add($p)}}
+
+      if(-not $repair.Success){
+        $failure="Worker repair exited with code $($repair.ExitCode). Previous failure:`n$failure"
+        continue
+      }
+
+      $changed=@(Get-ChangedPaths $before)
+      if($changed.Count -eq 0 -and -not $block.AllowNoChanges){
+        $failure="Worker repair produced no valid in-scope changes."
+        continue
+      }
+
+      $result=Invoke-Validation $block $before
+      if($result.Success){
+        Write-Host "GREEN after worker repair: block $($block.Id)" -ForegroundColor Green
+        return
+      }
+      $failure=$result.Output
+    }
+
+    for($attempt=1;$attempt -le $MaxRescueAttempts;$attempt++){
+      Write-Host "Rescue model $attempt/$MaxRescueAttempts for $($block.Id)..." -ForegroundColor Magenta
+      $rescue=Invoke-Rescue $block $failure $before @($scopeRestored)
+      $scope=Restore-ForbiddenChanges $block $before
+      foreach($p in @($scope.Restored)){if(-not $scopeRestored.Contains($p)){[void]$scopeRestored.Add($p)}}
+
+      if(-not $rescue.Success){
+        $failure="Rescue Aider exited with code $($rescue.ExitCode). Previous failure:`n$failure"
+        continue
+      }
+
+      $changed=@(Get-ChangedPaths $before)
+      if($changed.Count -eq 0 -and -not $block.AllowNoChanges){
+        $failure="Rescue model produced no valid in-scope changes."
+        continue
+      }
+
+      $result=Invoke-Validation $block $before
+      if($result.Success){
+        Write-Host "GREEN after rescue: block $($block.Id)" -ForegroundColor Green
+        return
+      }
+      $failure=$result.Output
+    }
+
+    Fail "Block $($block.Id) failed after worker repairs and rescue. Last failure:`n$failure"
   }
 
   $startIndex=-1
@@ -373,25 +671,45 @@ $err
   if($startIndex -lt 0){Fail "Unknown StartFrom '$StartFrom'. Use 05,10,11,12,13,14,15,16,17,18 or a block id such as 10C."}
   $blocks=$blocks[$startIndex..($blocks.Count-1)]
 
-  Write-Host "== AGRO INTELLIGENCE NIGHT BUILD - MICRO BLOCKS ==" -ForegroundColor Cyan
-  Write-Host "Repo root: $repoRoot"; Write-Host "Branch: $branch"; Write-Host "Model: ollama_chat/agro-coder"
-  Write-Host "Context: repo-map OFF / map-tokens 0 / small editable sets"; Write-Host "Starting from: $StartFrom"; Write-Host "No tests. No push.`n"
+  Write-Host "== AGRO INTELLIGENCE NIGHT BUILD - DUAL LOCAL MODELS ==" -ForegroundColor Cyan
+  Write-Host "Repo root: $repoRoot"
+  Write-Host "Branch: $branch"
+  Write-Host "Worker: $WorkerAiderModel"
+  Write-Host "Rescue: $RescueAiderModel"
+  Write-Host "Context: repo-map OFF / map-tokens 0 / narrow read-only context"
+  Write-Host "Starting from: $StartFrom"
+  Write-Host "No tests. No push.`n"
 
   foreach($block in $blocks){
     Write-Host "== Block $($block.Id): $($block.Name) ==" -ForegroundColor Cyan
+
+    if (git status --porcelain --untracked-files=all) {
+      Fail "Working tree became dirty before block $($block.Id). Previous block should have committed cleanly."
+    }
+
     $before=(git rev-parse HEAD).Trim()
-    Invoke-Implementation $block
-    Assert-BlockPaths $block $before
-    $changed=@(Get-ChangedPaths $before)
-    if($changed.Count -eq 0 -and -not $block.AllowNoChanges){Fail "Block $($block.Id) produced no changes."}
-    Gate-With-Repair $block $before
-    Assert-BlockPaths $block $before
+    Complete-Block $block $before
+
+    # One final scope enforcement before staging.
+    $scope=Restore-ForbiddenChanges $block $before
+    if($scope.HadViolation){
+      $finalCheck=Invoke-Validation $block $before
+      if(-not $finalCheck.Success){Fail "Block $($block.Id) failed after final scope restoration.`n$($finalCheck.Output)"}
+    }
+
     $changed=@(Get-ChangedPaths $before)
     if($changed.Count -gt 0){
-      git add -- $changed; if($LASTEXITCODE -ne 0){Fail "git add failed on block $($block.Id)."}
-      git commit -m "night: $($block.Id) $($block.Name)"; if($LASTEXITCODE -ne 0){Fail "Commit failed on block $($block.Id)."}
+      git add -- $changed
+      if($LASTEXITCODE -ne 0){Fail "git add failed on block $($block.Id)."}
+
+      git commit -m "night: $($block.Id) $($block.Name)"
+      if($LASTEXITCODE -ne 0){Fail "Commit failed on block $($block.Id)."}
       Write-Host "COMMITTED: block $($block.Id)" -ForegroundColor Green
-    } else { Write-Host "NO-OP GREEN: block $($block.Id)" -ForegroundColor Green }
+    }
+    else {
+      if(-not $block.AllowNoChanges){Fail "Block $($block.Id) ended with no changes."}
+      Write-Host "NO-OP GREEN: block $($block.Id)" -ForegroundColor Green
+    }
     Write-Host ""
   }
 
