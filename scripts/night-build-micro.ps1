@@ -352,7 +352,7 @@ try {
 
       $content = Get-Content -Raw -LiteralPath $p
 
-      if ($content -match '@nestjs/typeORM') {
+      if ($content -cmatch '@nestjs/typeORM') {
         $errors.Add("$p contains invalid @nestjs/typeORM casing; use @nestjs/typeorm.")
       }
 
