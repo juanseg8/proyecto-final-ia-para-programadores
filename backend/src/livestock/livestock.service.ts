@@ -9,9 +9,13 @@ import { Repository } from 'typeorm';
 
 import { CreateHerdDto, UpdateHerdDto } from './dto/herd.dto';
 import { CreateAnimalDto, UpdateAnimalDto } from './dto/animal.dto';
+import { CreateWeighingDto } from './dto/weighing.dto';
+import { CreateLivestockEventDto } from './dto/livestock-event.dto';
 
 import { Herd } from '../entities/herd.entity';
 import { Animal } from '../entities/animal.entity';
+import { Weighing } from '../entities/weighing.entity';
+import { LivestockEvent } from '../entities/livestock-event.entity';
 
 @Injectable()
 export class LivestockService {
@@ -21,6 +25,12 @@ export class LivestockService {
 
     @InjectRepository(Animal)
     private readonly animalRepository: Repository<Animal>,
+
+    @InjectRepository(Weighing)
+    private readonly weighingRepository: Repository<Weighing>,
+
+    @InjectRepository(LivestockEvent)
+    private readonly livestockEventRepository: Repository<LivestockEvent>,
   ) {}
 
   // ============================================================
@@ -204,5 +214,121 @@ export class LivestockService {
     Object.assign(animal, updateAnimalDto);
 
     return this.animalRepository.save(animal);
+  }
+
+  // ============================================================
+  // WEIGHINGS
+  // ============================================================
+
+  async createWeighing(
+    establishmentId: string,
+    createWeighingDto: CreateWeighingDto,
+  ): Promise<Weighing> {
+    // Validar que el rodeo y el animal existan y pertenezcan al mismo establecimiento.
+    const herd = await this.herdRepository.findOne({
+      where: {
+        id: createWeighingDto.herdId,
+        establishmentId,
+      },
+    });
+
+    if (!herd) {
+      throw new NotFoundException('Rodeo no encontrado');
+    }
+
+    const animal = await this.animalRepository.findOne({
+      where: {
+        id: createWeighingDto.animalId,
+        establishmentId,
+      },
+    });
+
+    if (!animal) {
+      throw new NotFoundException('Animal no encontrado');
+    }
+
+    const weighing = this.weighingRepository.create({
+      ...createWeighingDto,
+      establishmentId,
+    });
+
+    return this.weighingRepository.save(weighing);
+  }
+
+  async findWeighings(
+    establishmentId: string,
+  ): Promise<Weighing[]> {
+    return this.weighingRepository.find({
+      where: {
+        establishmentId,
+      },
+      relations: {
+        herd: true,
+        animal: true,
+      },
+      order: {
+        weighedAt: 'DESC',
+      },
+    });
+  }
+
+  // ============================================================
+  // LIVESTOCK EVENTS
+  // ============================================================
+
+  async createLivestockEvent(
+    establishmentId: string,
+    createLivestockEventDto: CreateLivestockEventDto,
+  ): Promise<LivestockEvent> {
+    // Validar que el rodeo y el animal (si se proporcionan) existan y pertenezcan al mismo establecimiento.
+    if (createLivestockEventDto.herdId) {
+      const herd = await this.herdRepository.findOne({
+        where: {
+          id: createLivestockEventDto.herdId,
+          establishmentId,
+        },
+      });
+
+      if (!herd) {
+        throw new NotFoundException('Rodeo no encontrado');
+      }
+    }
+
+    if (createLivestockEventDto.animalId) {
+      const animal = await this.animalRepository.findOne({
+        where: {
+          id: createLivestockEventDto.animalId,
+          establishmentId,
+        },
+      });
+
+      if (!animal) {
+        throw new NotFoundException('Animal no encontrado');
+      }
+    }
+
+    const livestockEvent = this.livestockEventRepository.create({
+      ...createLivestockEventDto,
+      establishmentId,
+    });
+
+    return this.livestockEventRepository.save(livestockEvent);
+  }
+
+  async findLivestockEvents(
+    establishmentId: string,
+  ): Promise<LivestockEvent[]> {
+    return this.livestockEventRepository.find({
+      where: {
+        establishmentId,
+      },
+      relations: {
+        herd: true,
+        animal: true,
+      },
+      order: {
+        occurredAt: 'DESC',
+      },
+    });
   }
 }
