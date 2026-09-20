@@ -3,6 +3,10 @@ import { User } from './entities/user.entity';
 import { Session } from './entities/session.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { Establishment } from './entities/establishment.entity';
+import { Herd } from './entities/herd.entity';
+import { Animal } from './entities/animal.entity';
+import { Weighing } from './entities/weighing.entity';
+import { LivestockEvent } from './entities/livestock-event.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -13,7 +17,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || 'agro_user',
   password: process.env.DB_PASSWORD || 'agro_pass',
   database: process.env.DB_NAME || 'agro_db',
-  entities: [User, Session, PasswordResetToken, Establishment],
+  entities: [User, Session, PasswordResetToken, Establishment, Herd, Animal, Weighing, LivestockEvent],
   migrations: ['src/db/migrations/*.ts'],
   synchronize: false,
 });
