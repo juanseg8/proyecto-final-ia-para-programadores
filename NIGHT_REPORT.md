@@ -8,7 +8,7 @@ Preflight F02 navigation/refresh: VERIFIED_EXISTING
 
 03 GeoRef/SearchableSelect: PENDING
 04 UI foundation: PENDING
-05 Map/GPS: PENDING - REAL_DEVICE_REQUIRED
+05 Map/GPS: COMPLETED - REAL_DEVICE_REQUIRED
 10 F03 backend: PENDING
 11 F03 mobile: PENDING
 12 F04 indicators: PENDING
