@@ -1,19 +1,27 @@
-import { IsDateString, IsNumber, IsString, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsPositive,
+} from 'class-validator';
 
 export class CreateWeighingDto {
-  @IsDateString()
-  weighedAt!: string;
-
-  @IsNumber()
-  weightKg!: number;
-
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
   @IsUUID()
   herdId!: string;
 
   @IsUUID()
   animalId!: string;
+
+  @IsDateString()
+  weighedAt!: string;
+
+  @IsNumber()
+  @IsPositive()
+  weightKg!: number;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }

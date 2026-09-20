@@ -1,6 +1,15 @@
-import { IsString, IsEnum, IsDateString, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsDateString,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateAnimalDto {
+  @IsUUID()
+  herdId!: string;
+
   @IsString()
   tag!: string;
 
@@ -12,10 +21,15 @@ export class CreateAnimalDto {
   birthDate?: string;
 
   @IsEnum(['ACTIVE', 'SOLD', 'DEAD', 'TRANSFERRED'])
-  status!: 'ACTIVE' | 'SOLD' | 'DEAD' | 'TRANSFERRED';
+  @IsOptional()
+  status?: 'ACTIVE' | 'SOLD' | 'DEAD' | 'TRANSFERRED';
 }
 
 export class UpdateAnimalDto {
+  @IsUUID()
+  @IsOptional()
+  herdId?: string;
+
   @IsString()
   @IsOptional()
   tag?: string;

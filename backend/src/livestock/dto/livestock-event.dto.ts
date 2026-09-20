@@ -1,13 +1,47 @@
-import { IsEnum, IsDateString, IsNumber, IsString, IsOptional, IsObject, IsUUID } from 'class-validator';
+import {
+  IsEnum,
+  IsDateString,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsObject,
+  IsUUID,
+  IsInt,
+} from 'class-validator';
 
 export class CreateLivestockEventDto {
-  @IsEnum(['MOVEMENT', 'HEALTH', 'FEEDING', 'PURCHASE', 'SALE', 'DEATH', 'COST', 'OTHER'])
-  type!: 'MOVEMENT' | 'HEALTH' | 'FEEDING' | 'PURCHASE' | 'SALE' | 'DEATH' | 'COST' | 'OTHER';
+  @IsUUID()
+  @IsOptional()
+  herdId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  animalId?: string;
+
+  @IsEnum([
+    'MOVEMENT',
+    'HEALTH',
+    'FEEDING',
+    'PURCHASE',
+    'SALE',
+    'DEATH',
+    'COST',
+    'OTHER',
+  ])
+  type!:
+    | 'MOVEMENT'
+    | 'HEALTH'
+    | 'FEEDING'
+    | 'PURCHASE'
+    | 'SALE'
+    | 'DEATH'
+    | 'COST'
+    | 'OTHER';
 
   @IsDateString()
   occurredAt!: string;
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   animalCount?: number;
 
@@ -21,13 +55,5 @@ export class CreateLivestockEventDto {
 
   @IsObject()
   @IsOptional()
-  metadata?: Record<string, any>;
-
-  @IsUUID()
-  @IsOptional()
-  herdId?: string;
-
-  @IsUUID()
-  @IsOptional()
-  animalId?: string;
+  metadata?: Record<string, unknown>;
 }
