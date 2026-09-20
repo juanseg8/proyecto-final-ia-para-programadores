@@ -1,99 +1,60 @@
+// entire file content ...
 import React from 'react';
-import { TextInput, TextInputProps, StyleSheet, View, TouchableOpacity } from 'react-native';
-import { theme } from '../theme/theme';
+import { TextInput, View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'styled-components/native';
 
-interface AppInputProps extends TextInputProps {
-  disabled?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  onRightIconPress?: () => void;
-}
-
-export const AppInput: React.FC<AppInputProps> = ({
-  style,
-  disabled,
-  leftIcon,
-  rightIcon,
-  onRightIconPress,
-  ...props
+const AppInput = ({
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry = false,
+  error,
+  label,
+}: {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  error?: string;
+  label?: string;
 }) => {
-  if (!leftIcon && !rightIcon) {
-    return (
-      <TextInput
-        style={[styles.input, disabled && styles.disabledInput, style]}
-        placeholderTextColor={theme.colors.textSecondary}
-        editable={!disabled}
-        accessibilityState={{ disabled: !!disabled }}
-        {...props}
-      />
-    );
-  }
+  const theme = useTheme();
 
   return (
-    <View style={[styles.inputWrapper, disabled && styles.disabledWrapper]}>
-      {leftIcon && <View style={styles.leftIconContainer}>{leftIcon}</View>}
+    <View style={styles.container}>
+      {label && <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>}
       <TextInput
-        style={[styles.inputInner, disabled && styles.disabledInner, style]}
-        placeholderTextColor={theme.colors.textSecondary}
-        editable={!disabled}
-        accessibilityState={{ disabled: !!disabled }}
-        {...props}
+        style={[styles.input, { borderColor: error ? theme.colors.error : theme.colors.disabled }]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.disabled}
+        secureTextEntry={secureTextEntry}
       />
-      {rightIcon && (
-        <TouchableOpacity
-          onPress={onRightIconPress}
-          style={styles.rightIconContainer}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          {rightIcon}
-        </TouchableOpacity>
-      )}
+      {error && <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text>}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
   input: {
-    backgroundColor: theme.colors.surface,
+    height: 40,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.input,
-    paddingHorizontal: theme.spacing[16],
-    paddingVertical: theme.spacing[12],
-    color: theme.colors.textPrimary,
-    ...theme.typography.body,
+    borderRadius: 4,
+    padding: 10,
+    fontSize: 16,
   },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.input,
-    paddingHorizontal: theme.spacing[12],
-  },
-  disabledWrapper: {
-    backgroundColor: theme.colors.background,
-  },
-  leftIconContainer: {
-    marginRight: theme.spacing[8],
-  },
-  rightIconContainer: {
-    marginLeft: theme.spacing[8],
-    padding: 4,
-  },
-  inputInner: {
-    flex: 1,
-    paddingVertical: theme.spacing[12],
-    color: theme.colors.textPrimary,
-    ...theme.typography.body,
-  },
-  disabledInner: {
-    color: theme.colors.textSecondary,
-  },
-  disabledInput: {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textSecondary,
+  error: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 
+export default AppInput;

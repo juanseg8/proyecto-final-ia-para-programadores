@@ -1,19 +1,24 @@
+// entire file content ...
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { theme } from '../theme/theme';
+import { useTheme } from 'styled-components/native';
 
-interface BottomNavProps {
-  navigate: (routeName: string) => void;
-}
+const BottomNav = ({ navigation }: { navigation: any }) => {
+  const theme = useTheme();
 
-export const BottomNav: React.FC<BottomNavProps> = ({ navigate }) => {
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.tab} onPress={() => navigate('Home')}>
-        <Text style={styles.label}>Inicio</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('Home')}
+      >
+        <Text style={[styles.text, { color: theme.colors.text }]}>Inicio</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tab} onPress={() => navigate('Establishments')}>
-        <Text style={styles.label}>Establecimientos</Text>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => navigation.navigate('EstablishmentList')}
+      >
+        <Text style={[styles.text, { color: theme.colors.text }]}>Establecimientos</Text>
       </TouchableOpacity>
     </View>
   );
@@ -22,20 +27,17 @@ export const BottomNav: React.FC<BottomNavProps> = ({ navigate }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
+    justifyContent: 'space-around',
+    padding: 16,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingBottom: 20,
-    paddingTop: 10,
+    borderTopColor: '#ddd',
   },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: theme.spacing[8],
+  button: {
+    padding: 8,
   },
-  label: {
-    ...theme.typography.label,
-    color: theme.colors.textSecondary,
+  text: {
+    fontSize: 14,
   },
 });
+
+export default BottomNav;

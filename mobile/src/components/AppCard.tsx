@@ -1,26 +1,36 @@
+// entire file content ...
 import React from 'react';
-import { View, StyleSheet, ViewProps } from 'react-native';
-import { theme } from '../theme/theme';
+import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'styled-components/native';
 
-export const AppCard: React.FC<ViewProps> = ({ children, style, ...props }) => {
+const AppCard = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  const theme = useTheme();
+
   return (
-    <View accessibilityRole="summary" style={[styles.card, style]} {...props}>
-      {children}
+    <View style={[styles.card, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+      <View style={styles.content}>{children}</View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.card,
-    padding: theme.spacing[16],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#ddd',
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    padding: 16,
   },
 });
+
+export default AppCard;

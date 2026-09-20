@@ -1,12 +1,16 @@
+// entire file content ...
 import React from 'react';
-import { StyleSheet, ViewProps } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '../theme/theme';
+import { SafeAreaView, ScrollView, StyleSheet } from 'react-native';
+import { useTheme } from 'styled-components/native';
 
-export const AppScreen: React.FC<ViewProps> = ({ children, style, ...props }) => {
+const AppScreen = ({ children, style }: { children: React.ReactNode; style?: any }) => {
+  const theme = useTheme();
+
   return (
-    <SafeAreaView style={[styles.container, style]} {...props}>
-      {children}
+    <SafeAreaView style={[styles.container, style, { backgroundColor: theme.colors.background }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {children}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -14,6 +18,10 @@ export const AppScreen: React.FC<ViewProps> = ({ children, style, ...props }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
 });
+
+export default AppScreen;

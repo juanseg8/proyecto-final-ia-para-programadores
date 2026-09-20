@@ -1,57 +1,58 @@
+// entire file content ...
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, TouchableOpacityProps } from 'react-native';
-import { theme } from '../theme/theme';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'styled-components/native';
 
-interface AppButtonProps extends TouchableOpacityProps {
-  title: string;
-  loading?: boolean;
-}
-
-export const AppButton: React.FC<AppButtonProps> = ({ 
-  title, 
-  onPress, 
-  disabled, 
-  loading,
-  accessibilityLabel,
+const AppButton = ({
+  title,
+  onPress,
   style,
-  ...props 
+  textStyle,
+  disabled = false,
+  destructive = false,
+}: {
+  title: string;
+  onPress: () => void;
+  style?: any;
+  textStyle?: any;
+  disabled?: boolean;
+  destructive?: boolean;
 }) => {
-  const isDisabled = disabled || loading;
+  const theme = useTheme();
+
+  const getBackgroundColor = () => {
+    if (destructive) return theme.colors.error;
+    if (disabled) return theme.colors.disabled;
+    return theme.colors.primary;
+  };
+
+  const getTextColor = () => {
+    if (destructive) return '#FFFFFF';
+    return theme.colors.text;
+  };
+
   return (
     <TouchableOpacity
+      style={[styles.button, { backgroundColor: getBackgroundColor() }, style]}
       onPress={onPress}
-      disabled={isDisabled}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel || title}
-      accessibilityState={{ disabled: !!isDisabled }}
-      style={[styles.button, isDisabled && styles.disabled, style]}
-      {...props}
+      disabled={disabled}
     >
-      <Text style={[styles.text, isDisabled && styles.textDisabled]}>
-        {loading ? 'Cargando...' : title}
-      </Text>
+      <Text style={[styles.text, { color: getTextColor() }, textStyle]}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: theme.colors.forest,
-    paddingVertical: theme.spacing[16],
-    paddingHorizontal: theme.spacing[24],
-    borderRadius: theme.radius.button,
+    padding: 16,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  disabled: {
-    backgroundColor: theme.colors.border,
-  },
   text: {
-    color: theme.colors.surface,
-    ...theme.typography.body,
-    fontWeight: '600',
-  },
-  textDisabled: {
-    color: theme.colors.textSecondary,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
+
+export default AppButton;

@@ -1,34 +1,45 @@
+// entire file content ...
 import React from 'react';
-import { View, Text, StyleSheet, ViewProps } from 'react-native';
-import { theme } from '../theme/theme';
+import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'styled-components/native';
+import AppInput from './AppInput';
 
-interface FormFieldProps extends ViewProps {
+const FormField = ({
+  label,
+  value,
+  onChangeText,
+  error,
+  secureTextEntry = false,
+}: {
   label: string;
+  value: string;
+  onChangeText: (text: string) => void;
   error?: string;
-}
+  secureTextEntry?: boolean;
+}) => {
+  const theme = useTheme();
 
-export const FormField: React.FC<FormFieldProps> = ({ label, error, children, style, ...props }) => {
   return (
-    <View style={[styles.container, style]} {...props}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-      {!!error && <Text style={styles.error}>{error}</Text>}
+    <View style={styles.container}>
+      <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+      <AppInput
+        value={value}
+        onChangeText={onChangeText}
+        error={error}
+        secureTextEntry={secureTextEntry}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing[16],
+    marginBottom: 16,
   },
   label: {
-    color: theme.colors.textPrimary,
-    ...theme.typography.label,
-    marginBottom: theme.spacing[8],
-  },
-  error: {
-    color: theme.colors.error,
-    ...theme.typography.caption,
-    marginTop: theme.spacing[4],
+    fontSize: 14,
+    marginBottom: 4,
   },
 });
+
+export default FormField;
