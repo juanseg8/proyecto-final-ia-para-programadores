@@ -249,7 +249,7 @@ try {
   function Get-ChangedPaths([string]$before) {
     $paths = New-Object System.Collections.Generic.List[string]
     foreach ($p in @(git diff --name-only $before)) { if ($p) { $paths.Add((N $p)) } }
-    foreach ($line in @(git status --porcelain)) {
+    foreach ($line in @(git status --porcelain --untracked-files=all)) {
       if ($line.Length -lt 4) { continue }
       $p = $line.Substring(3).Trim()
       if ($p -match " -> ") { $p = ($p -split " -> ")[-1] }
