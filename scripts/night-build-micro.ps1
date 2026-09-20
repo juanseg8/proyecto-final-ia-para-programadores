@@ -1,7 +1,7 @@
 ﻿param(
   [string]$StartFrom = "05",
   [int]$MaxCompileRepairAttempts = 2,
-  [int]$MaxRescueAttempts = 1
+  [int]$MaxRescueAttempts = 2
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,9 +34,9 @@ try {
   $RescueAiderModel = "ollama_chat/deepseek-coder-v2:16b"
   $RescueOllamaModel = "deepseek-coder-v2:16b"
 
-  & ollama show $WorkerOllamaModel *> $null
+  & cmd.exe /d /s /c "ollama show `"$WorkerOllamaModel`" >nul 2>&1"
   if ($LASTEXITCODE -ne 0) { Fail "Ollama model '$WorkerOllamaModel' is not available." }
-  & ollama show $RescueOllamaModel *> $null
+  & cmd.exe /d /s /c "ollama show `"$RescueOllamaModel`" >nul 2>&1"
   if ($LASTEXITCODE -ne 0) { Fail "Ollama rescue model '$RescueOllamaModel' is not available." }
 
   $env:OLLAMA_API_BASE = "http://127.0.0.1:11434"
@@ -109,86 +109,98 @@ try {
     B "11C" "11" "F03 mobile navigation" "night-tasks/11-f03-mobile.md" "mobile" @(
       "mobile/App.tsx","mobile/src/screens/EstablishmentDetailScreen.tsx"
     ) @(
-      "specs/features/F03-gestion-ganadera.md","mobile/src/screens/LivestockScreen.tsx","mobile/src/screens/HerdDetailScreen.tsx","mobile/src/screens/CreateHerdScreen.tsx","mobile/src/screens/CreateAnimalScreen.tsx","mobile/src/screens/RegisterWeighingScreen.tsx","mobile/src/screens/RegisterLivestockEventScreen.tsx"
-    ) "Wire completed F03 screens into existing navigation and add entry from establishment detail. Preserve F01/F02 auth/navigation. No dead tabs."
+      "specs/features/F03-gestion-ganadera.md","mobile/src/screens/LivestockScreen.tsx","mobile/src/screens/HerdDetailScreen.tsx","mobile/src/screens/CreateHerdScreen.tsx","mobile/src/screens/CreateAnimalScreen.tsx","mobile/src/screens/RegisterWeighingScreen.tsx","mobile/src/screens/RegisterLivestockEventScreen.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/AppCard.tsx","mobile/src/theme/theme.ts"
+    ) "Wire completed F03 screens into the EXISTING createNativeStackNavigator and add a real entry from establishment detail. Preserve every existing F01/F02 route and screen. Use the project's current untyped navigation pattern; do not introduce @react-navigation/stack, a new navigation library, or a second NavigationContainer. Preserve existing establishment UI/data behavior. No dead tabs or fake data."
+
+    B "11Z" "11" "F03 ownership DI hardening" "night-tasks/11-f03-mobile.md" "backend" @(
+      "backend/src/establishments/establishment.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/livestock/livestock.module.ts","backend/src/livestock/livestock.controller.ts"
+    ) @(
+      "specs/features/F03-gestion-ganadera.md","specs/constitution.md","backend/src/establishments/establishment.service.ts","backend/src/auth/guards/jwt-auth.guard.ts","backend/src/livestock/livestock.service.ts"
+    ) "Harden F03 runtime DI and INV-05 before later modules depend on it. EstablishmentOwnershipGuard must accept either route param id or establishmentId and return 404 for foreign/missing establishments. EstablishmentModule must provide/export EstablishmentService and EstablishmentOwnershipGuard. LivestockModule must import EstablishmentModule as needed and export LivestockService. LivestockController must be protected by JwtAuthGuard plus EstablishmentOwnershipGuard for establishment-scoped routes. Preserve all existing F03 routes and behavior."
 
     B "12A" "12" "F04 entity service" "night-tasks/12-f04-indicators.md" "backend" @(
       "backend/src/entities/indicator-snapshot.entity.ts","backend/src/indicators/indicators.service.ts"
     ) @(
-      "specs/features/F04-indicadores.md","backend/src/entities/establishment.entity.ts","backend/src/entities/herd.entity.ts","backend/src/entities/animal.entity.ts","backend/src/entities/weighing.entity.ts","backend/src/entities/livestock-event.entity.ts","backend/src/livestock/livestock.service.ts"
-    ) "Implement deterministic F04 calculations and snapshot entity exactly as specified: GMD, active heads, stocking rate, mortality and cost/kg. INV-01: no LLM-derived visible numbers."
+      "specs/features/F04-indicadores.md","specs/constitution.md","backend/src/entities/establishment.entity.ts","backend/src/entities/herd.entity.ts","backend/src/entities/animal.entity.ts","backend/src/entities/weighing.entity.ts","backend/src/entities/livestock-event.entity.ts","backend/src/livestock/livestock.service.ts","backend/src/establishments/establishment.service.ts"
+    ) "Implement deterministic F04 calculations and snapshot entity exactly as specified: GMD, active heads, stocking rate, mortality and cost/kg. No LLM. Treat PostgreSQL decimal values defensively with Number(...) before arithmetic. Missing/insufficient data must remain null/INSUFFICIENT_DATA as specified, never fake zero except the explicit mortality denominator=0 rule. Validate from/to semantics in the service contract so the controller can map invalid dates to 400. Preserve ownership by establishmentId/herdId."
 
     B "12B" "12" "F04 API migration" "night-tasks/12-f04-indicators.md" "backend" @(
       "backend/src/indicators/indicators.controller.ts","backend/src/indicators/indicators.module.ts","backend/src/db/migrations/1790000001000-F04Indicators.ts"
     ) @(
-      "specs/features/F04-indicadores.md","backend/src/indicators/indicators.service.ts","backend/src/entities/indicator-snapshot.entity.ts"
-    ) "Expose F04 through controller/module and create its migration. Do not duplicate calculations in controller."
+      "specs/features/F04-indicadores.md","specs/constitution.md","backend/src/indicators/indicators.service.ts","backend/src/entities/indicator-snapshot.entity.ts","backend/src/entities/establishment.entity.ts","backend/src/entities/herd.entity.ts","backend/src/entities/animal.entity.ts","backend/src/entities/weighing.entity.ts","backend/src/entities/livestock-event.entity.ts","backend/src/establishments/establishment.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts","backend/src/establishments/establishment.controller.ts"
+    ) "Expose F04 through controller/module and create its migration. Use the existing JwtAuthGuard + EstablishmentOwnershipGuard pattern on /establishments/:id/indicators. Parse/validate from,to,herdId without duplicating indicator calculations in the controller. IndicatorsModule must import every TypeORM entity actually injected by IndicatorsService, import EstablishmentModule if needed, and EXPORT IndicatorsService for F06/F08/F09."
 
     B "12C" "12" "F04 wiring" "night-tasks/12-f04-indicators.md" "backend" @(
       "backend/src/app.module.ts","backend/src/data-source.ts"
     ) @(
       "backend/src/indicators/indicators.module.ts","backend/src/entities/indicator-snapshot.entity.ts"
-    ) "Register the F04 module/entity in the existing app/data-source only. Preserve prior modules."
+    ) "Register the F04 module/entity in the existing AppModule/data-source ONLY by appending required imports/entities. Preserve AuthModule, EstablishmentModule, LivestockModule, all existing TypeORM connection options, migrations and prior entities. Never rewrite the root configuration from scratch."
+
+    B "13P" "13" "benchmark profile settings" "night-tasks/13-f05-benchmark.md" "backend" @(
+      "backend/src/entities/establishment.entity.ts","backend/src/establishments/dto/update-benchmark-settings.dto.ts","backend/src/establishments/establishment.service.ts","backend/src/establishments/establishment.controller.ts"
+    ) @(
+      "specs/features/F03-gestion-ganadera.md","specs/features/F05-benchmark-anonimo.md","specs/constitution.md","backend/src/establishments/dto/create-establishment.dto.ts","backend/src/establishments/dto/update-establishment.dto.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Implement the benchmark participation profile that F03/F05 require without changing the canonical F02 create/update DTOs. Establishment gets participatesInBenchmark default false plus nullable activity and productionSystem. Add a dedicated validated UpdateBenchmarkSettingsDto and PUT /establishments/:id/benchmark-settings protected by existing JWT + ownership guard. userId must never come from the body. Service update must preserve ownership assumptions and only update these benchmark settings."
 
     B "13A" "13" "F05 benchmark core" "night-tasks/13-f05-benchmark.md" "backend" @(
       "backend/src/entities/benchmark-snapshot.entity.ts","backend/src/benchmark/benchmark.config.ts","backend/src/benchmark/benchmark.service.ts"
     ) @(
-      "specs/features/F05-benchmark-anonimo.md","backend/src/entities/establishment.entity.ts","backend/src/entities/indicator-snapshot.entity.ts","backend/src/indicators/indicators.service.ts"
-    ) "Implement F05 benchmark core with k>=10, reversible opt-in, self-exclusion, progressive relaxation and no individual third-party data. Keep thresholds in config."
+      "specs/features/F05-benchmark-anonimo.md","specs/constitution.md","backend/src/entities/establishment.entity.ts","backend/src/entities/indicator-snapshot.entity.ts","backend/src/indicators/indicators.service.ts","backend/src/establishments/establishment.service.ts","backend/package.json"
+    ) "Implement F05 benchmark core exactly to spec. K_MIN must come from typed startup configuration and can never be below 10. Respect opt-in, exclude self, never relax activity, progressively relax only the specified dimensions, and publish no aggregates or peerGroupSize below k. Never return third-party IDs/rows. Use explicit parameterized SQL through existing TypeORM/DataSource facilities where aggregation needs SQL; do NOT use QueryBuilder chains for benchmark aggregation and do not add packages."
 
     B "13B" "13" "F05 API migration" "night-tasks/13-f05-benchmark.md" "backend" @(
       "backend/src/benchmark/benchmark.controller.ts","backend/src/benchmark/benchmark.module.ts","backend/src/db/migrations/1790000002000-F05Benchmark.ts"
     ) @(
-      "specs/features/F05-benchmark-anonimo.md","backend/src/benchmark/benchmark.service.ts","backend/src/entities/benchmark-snapshot.entity.ts"
-    ) "Expose F05 through controller/module and create migration. Preserve privacy invariants."
+      "specs/features/F05-benchmark-anonimo.md","specs/constitution.md","backend/src/benchmark/benchmark.service.ts","backend/src/entities/benchmark-snapshot.entity.ts","backend/src/entities/establishment.entity.ts","backend/src/indicators/indicators.module.ts","backend/src/establishments/establishment.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Expose F05 through controller/module and create migration. Preserve all privacy invariants. The migration must create BenchmarkSnapshot storage AND add the benchmark profile columns to establishments if they are not already represented by an earlier migration. Controller routes must use existing JWT + ownership guards. BenchmarkModule must import its real dependencies and EXPORT BenchmarkService for F06/F08/F09."
 
     B "13C" "13" "F05 wiring" "night-tasks/13-f05-benchmark.md" "backend" @(
       "backend/src/app.module.ts","backend/src/data-source.ts"
     ) @(
       "backend/src/benchmark/benchmark.module.ts","backend/src/entities/benchmark-snapshot.entity.ts"
-    ) "Register F05 module/entity in the existing app/data-source only."
+    ) "Register F05 module/entity in the existing AppModule/data-source only. Append; do not replace AuthModule, EstablishmentModule, LivestockModule, IndicatorsModule, existing connection options, migrations or entities."
 
     B "14A" "14" "F06 alert rules" "night-tasks/14-f06-alerts.md" "backend" @(
       "backend/src/alerts/alerts.config.ts","backend/src/alerts/alerts.service.ts"
     ) @(
       "specs/features/F06-alertas.md","backend/src/indicators/indicators.service.ts","backend/src/benchmark/benchmark.service.ts","backend/src/livestock/livestock.service.ts"
-    ) "Implement deterministic configurable F06 alert rules. Missing data is not zero. No LLM."
+    ) "Implement deterministic configurable F06 alert rules exactly from F06. Every threshold comes from typed env-backed configuration, not literals in rule logic. Missing data never equals zero and never triggers a data-dependent alert. Reuse IndicatorsService/BenchmarkService/LivestockService contracts; do not duplicate their calculations. No LLM."
 
     B "14B" "14" "F06 API wiring" "night-tasks/14-f06-alerts.md" "backend" @(
       "backend/src/alerts/alerts.controller.ts","backend/src/alerts/alerts.module.ts","backend/src/app.module.ts"
     ) @(
-      "specs/features/F06-alertas.md","backend/src/alerts/alerts.service.ts"
-    ) "Expose F06 via controller/module and register it in AppModule. Preserve prior modules."
+      "specs/features/F06-alertas.md","specs/constitution.md","backend/src/alerts/alerts.service.ts","backend/src/indicators/indicators.module.ts","backend/src/benchmark/benchmark.module.ts","backend/src/livestock/livestock.module.ts","backend/src/establishments/establishment.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Expose F06 via controller/module and register it in AppModule without replacing prior imports. Protect /establishments/:id/alerts with existing JWT + ownership guards. AlertsModule must import its actual dependency modules and EXPORT AlertsService for F08/F09."
 
     B "15A" "15" "F07 weather core" "night-tasks/15-f07-weather.md" "backend" @(
       "backend/src/weather/open-meteo.provider.ts","backend/src/weather/weather.service.ts"
     ) @(
-      "specs/features/F07-clima.md","backend/src/entities/establishment.entity.ts","backend/src/establishments/establishment.service.ts"
-    ) "Implement Open-Meteo provider plus weather service with ownership, timeout and UNAVAILABLE fallback. No fake weather."
+      "specs/features/F07-clima.md","specs/constitution.md","backend/src/entities/establishment.entity.ts","backend/src/establishments/establishment.service.ts","backend/package.json"
+    ) "Implement Open-Meteo provider plus weather service exactly to F07. Do not add packages: use the Node runtime fetch/AbortController available in this backend. WEATHER_BASE_URL and timeout come from env/config; no secrets hardcoded. Provider errors/timeouts must return the deterministic UNAVAILABLE contract rather than throwing through the endpoint. No fake weather."
 
     B "15B" "15" "F07 backend wiring" "night-tasks/15-f07-weather.md" "backend" @(
       "backend/src/weather/weather.controller.ts","backend/src/weather/weather.module.ts","backend/src/app.module.ts"
     ) @(
-      "specs/features/F07-clima.md","backend/src/weather/weather.service.ts"
-    ) "Expose weather via controller/module and register it in AppModule."
+      "specs/features/F07-clima.md","specs/constitution.md","backend/src/weather/weather.service.ts","backend/src/establishments/establishment.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Expose weather via controller/module and register it in AppModule without replacing prior imports. Protect /establishments/:id/weather with existing JWT + ownership guards. WeatherModule imports EstablishmentModule as needed and EXPORTS WeatherService for F08/F09."
 
     B "15C" "15" "F07 mobile weather" "night-tasks/15-f07-weather.md" "mobile" @(
       "mobile/src/components/WeatherCard.tsx","mobile/src/components/index.ts","mobile/src/screens/EstablishmentDetailScreen.tsx"
     ) @(
-      "specs/features/F07-clima.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts"
-    ) "Implement WeatherCard and integrate it into establishment detail using only backend weather. Handle UNAVAILABLE gracefully. Spanish UX01 UI."
+      "specs/features/F07-clima.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts","mobile/src/components/AppCard.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/Feedback.tsx"
+    ) "Implement WeatherCard and integrate it into the EXISTING establishment detail using only apiClient -> backend weather. Never call Open-Meteo/fetch/axios directly from this component. Preserve all existing establishment detail and F03 entry behavior. Follow exact shared component props; AppCard is title + children. Handle UNAVAILABLE explicitly. Spanish UX01 UI."
 
     B "16A" "16" "F08 audit persistence" "night-tasks/16-f08-ai.md" "backend" @(
       "backend/src/entities/ai-interaction.entity.ts","backend/src/ai-audit/ai-audit.module.ts","backend/src/ai-audit/ai-audit.service.ts","backend/src/db/migrations/1790000003000-F08AiAudit.ts"
     ) @(
       "specs/features/F08-agro-ia.md","specs/constitution.md"
-    ) "Implement AI interaction persistence plus separate audit module/service and migration. INV-08. Keep persistence out of backend/src/ai."
+    ) "Implement AiInteraction persistence plus separate ai-audit module/service and migration exactly to F08/INV-08. Persist successful, failed and guardrail-rejected interactions. AiAuditModule must own TypeORM persistence and EXPORT AiAuditService. Keep every Repository/DataSource/QueryBuilder import out of backend/src/ai."
 
     B "16B" "16" "F08 provider guardrails" "night-tasks/16-f08-ai.md" "backend" @(
       "backend/src/ai/ai-provider.service.ts","backend/src/ai/ai-guardrails.service.ts"
     ) @(
-      "specs/features/F08-agro-ia.md","specs/constitution.md"
-    ) "Implement configurable OpenAI-compatible provider and F08 numeric/scope guardrails. No direct DB. No diagnosis. Deterministic fallback when AI fails."
+      "specs/features/F08-agro-ia.md","specs/constitution.md","backend/package.json"
+    ) "Implement configurable OpenAI-compatible provider and F08 numeric/scope guardrails. Do not add an SDK/package: use native fetch/AbortController against AI_BASE_URL with AI_API_KEY, AI_MODEL and AI_TIMEOUT_MS. Missing provider config or provider failure must be representable as deterministic fallback, not crash. No direct DB imports in backend/src/ai. No diagnosis; answer numbers must be drawn from deterministic context."
 
     B "16C" "16" "F08 orchestration base" "night-tasks/16-f08-ai.md" "backend" @(
       "backend/src/ai/ai.service.ts"
@@ -205,26 +217,26 @@ try {
     B "16E" "16" "F08 controller module" "night-tasks/16-f08-ai.md" "backend" @(
       "backend/src/ai/ai.controller.ts","backend/src/ai/ai.module.ts"
     ) @(
-      "specs/features/F08-agro-ia.md","backend/src/ai/ai.service.ts","backend/src/ai-audit/ai-audit.module.ts"
-    ) "Expose F08 through controller/module. Keep audit persistence separated from AI module."
+      "specs/features/F08-agro-ia.md","specs/constitution.md","backend/src/ai/ai.service.ts","backend/src/ai-audit/ai-audit.module.ts","backend/src/establishments/establishment.module.ts","backend/src/indicators/indicators.module.ts","backend/src/benchmark/benchmark.module.ts","backend/src/alerts/alerts.module.ts","backend/src/weather/weather.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Expose F08 through controller/module. Protect /establishments/:id/ai/ask with existing JWT + ownership guards. AiModule must import the dependency modules that provide its services; do not re-provide their services locally. Keep audit persistence separated in AiAuditModule. Export AiService only if needed by later modules."
 
     B "16F" "16" "F08 backend wiring" "night-tasks/16-f08-ai.md" "backend" @(
       "backend/src/app.module.ts","backend/src/data-source.ts"
     ) @(
       "backend/src/ai/ai.module.ts","backend/src/ai-audit/ai-audit.module.ts","backend/src/entities/ai-interaction.entity.ts"
-    ) "Register F08 modules/entity in app/data-source without changing unrelated config."
+    ) "Register F08 modules/entity in AppModule/data-source by appending only. Preserve every previously registered module/entity, DB option and migration setting. Never rewrite root config from scratch."
 
     B "16G" "16" "F08 mobile screen" "night-tasks/16-f08-ai.md" "mobile" @(
       "mobile/src/screens/AgroAiScreen.tsx","mobile/App.tsx"
     ) @(
-      "specs/features/F08-agro-ia.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts"
-    ) "Implement and wire Agro IA screen against real backend. Show fallback states clearly. No diagnosis or fake metrics. Spanish UX01 UI."
+      "specs/features/F08-agro-ia.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts","mobile/src/components/AppInput.tsx","mobile/src/components/AppCard.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/Feedback.tsx"
+    ) "Implement and wire Agro IA screen against real backend using the existing createNativeStackNavigator and exact shared component APIs. Preserve all existing routes. Use apiClient only. Show deterministic context/fallback when AI is unavailable, never fabricate an answer or metric, and never present diagnosis. Spanish UX01 UI."
 
     B "17A" "17" "F09 dashboard service core" "night-tasks/17-f09-dashboard.md" "backend" @(
       "backend/src/dashboard/dashboard.service.ts"
     ) @(
       "specs/features/F09-dashboard.md","backend/src/establishments/establishment.service.ts","backend/src/indicators/indicators.service.ts","backend/src/benchmark/benchmark.service.ts"
-    ) "Create the compileable F09 dashboard service core using establishment, indicators and benchmark. It must tolerate partial failures. No fake metrics and no AgroScore. Do not integrate alerts/weather yet."
+    ) "Create the compileable F09 dashboard service core using the ACTUAL public methods of establishment, indicators and benchmark services from read-only context. Compose results with independent try/catch or settled-style handling so one dependency failure does not erase the others. No fake metrics, no default zero for missing data and no AgroScore. Do not integrate alerts/weather yet."
 
     B "17B" "17" "F09 dashboard service alerts weather" "night-tasks/17-f09-dashboard.md" "backend" @(
       "backend/src/dashboard/dashboard.service.ts"
@@ -235,26 +247,26 @@ try {
     B "17C" "17" "F09 dashboard API" "night-tasks/17-f09-dashboard.md" "backend" @(
       "backend/src/dashboard/dashboard.controller.ts","backend/src/dashboard/dashboard.module.ts","backend/src/app.module.ts"
     ) @(
-      "specs/features/F09-dashboard.md","backend/src/dashboard/dashboard.service.ts"
-    ) "Expose F09 dashboard through controller/module and register it in AppModule. Preserve prior modules."
+      "specs/features/F09-dashboard.md","specs/constitution.md","backend/src/dashboard/dashboard.service.ts","backend/src/establishments/establishment.module.ts","backend/src/indicators/indicators.module.ts","backend/src/benchmark/benchmark.module.ts","backend/src/alerts/alerts.module.ts","backend/src/weather/weather.module.ts","backend/src/establishments/guards/establishment-ownership.guard.ts","backend/src/auth/guards/jwt-auth.guard.ts"
+    ) "Expose F09 dashboard through controller/module and register it in AppModule without replacing prior imports. Protect /establishments/:id/dashboard with JWT + ownership guards. DashboardModule must IMPORT dependency modules rather than re-providing their services."
 
     B "17D" "17" "F09 dashboard cards" "night-tasks/17-f09-dashboard.md" "mobile" @(
       "mobile/src/components/KpiCard.tsx","mobile/src/components/BenchmarkCard.tsx","mobile/src/components/AlertsCard.tsx"
     ) @(
-      "specs/features/F09-dashboard.md","specs/ui/UX01-Design-System.md","mobile/src/theme/theme.ts"
-    ) "Implement F09 dashboard cards with UX01. Display only real backend values and explicit unavailable states."
+      "specs/features/F09-dashboard.md","specs/ui/UX01-Design-System.md","mobile/src/theme/theme.ts","mobile/src/components/AppCard.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/Feedback.tsx"
+    ) "Implement F09 dashboard cards with UX01 using the EXISTING shared component contracts exactly. AppCard accepts title + children only. Cards receive typed data through props, perform presentation only, never fetch independently, never invent numeric defaults and render explicit unavailable/insufficient-data states."
 
     B "17E" "17" "F09 home integration" "night-tasks/17-f09-dashboard.md" "mobile" @(
       "mobile/src/screens/HomeScreen.tsx","mobile/src/components/index.ts"
     ) @(
-      "specs/features/F09-dashboard.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/App.tsx","mobile/src/components/KpiCard.tsx","mobile/src/components/BenchmarkCard.tsx","mobile/src/components/AlertsCard.tsx","mobile/src/components/WeatherCard.tsx"
-    ) "Integrate real F09 dashboard into Home for selected establishment: KPIs, benchmark, alerts, weather, livestock and Agro IA entry points. No fake metrics or AgroScore."
+      "specs/features/F09-dashboard.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/App.tsx","mobile/src/components/index.ts","mobile/src/components/AppButton.tsx","mobile/src/components/AppCard.tsx","mobile/src/components/Feedback.tsx","mobile/src/components/SearchableSelect.tsx","mobile/src/components/KpiCard.tsx","mobile/src/components/BenchmarkCard.tsx","mobile/src/components/AlertsCard.tsx","mobile/src/components/WeatherCard.tsx"
+    ) "Integrate real F09 dashboard into Home. Load real establishments through apiClient, let the user select an actual establishment (SearchableSelect exact API is provided), then load /establishments/:id/dashboard for it. Preserve navigation. Show KPIs, benchmark, alerts, weather and real CTAs to Gestión Ganadera and Agro IA. Missing/partial data must stay unavailable, never zero/fake. No AgroScore."
 
     B "18A" "18" "final integration code" "night-tasks/18-mvp-polish.md" "both" @(
       "backend/src/app.module.ts","backend/src/data-source.ts","mobile/App.tsx","mobile/src/apiClient.ts"
     ) @(
       "specs/000-index.md","night-tasks/18-mvp-polish.md"
-    ) "Final integration pass on these wiring files only. Fix broken imports/routes and remove debug-only code in these files. Preserve all features. It is valid to make no changes if already correct." $true
+    ) "Final integration pass on these wiring files only. Preserve every F01-F09 module, entity and navigation route already registered. Fix only broken imports/routes and debug-only code in these files; do not simplify/rebuild root config. No console.log, mock data, fake values, duplicate NavigationContainer, or unsupported navigation package. It is valid to make no changes if already correct." $true
 
     B "18B" "18" "final docs env" "night-tasks/18-mvp-polish.md" "both" @(
       "backend/.env.example","mobile/.env.example","README.md"
@@ -314,6 +326,22 @@ try {
     @{ HadViolation=$true; Restored=$bad }
   }
 
+  function Reset-BlockChanges([hashtable]$block,[string]$before) {
+    Write-Host "Resetting failed in-scope changes for block $($block.Id)..." -ForegroundColor Yellow
+    $allowed = @($block.Editable | ForEach-Object { N $_ })
+    foreach ($p in @(Get-ChangedPaths $before)) {
+      if ($p -notin $allowed) { continue }
+      $tracked = (@(& git ls-files -- "$p")).Count -gt 0
+      if ($tracked) {
+        & git restore --source=$before --staged --worktree -- "$p"
+        if ($LASTEXITCODE -ne 0) { Fail "Could not reset tracked path '$p' after failed block." }
+      }
+      elseif (Test-Path -LiteralPath $p) {
+        Remove-Item -LiteralPath $p -Force -Recurse
+      }
+    }
+  }
+
   function Invoke-Cmd([string]$working,[string]$command) {
     Push-Location $working
     try {
@@ -359,6 +387,18 @@ try {
       if ($p.StartsWith("mobile/") -and $content -match 'styled-components') {
         $errors.Add("$p introduces styled-components, which is not part of this mobile project.")
       }
+
+      if ($p.StartsWith("mobile/") -and $content -match 'from\s+["'']\.\./theme["'']') {
+        $errors.Add("$p imports ../theme; this project uses ../theme/theme.")
+      }
+
+      if ($p.StartsWith("mobile/") -and $content -match '@react-navigation/stack') {
+        $errors.Add("$p introduces @react-navigation/stack; this project uses native-stack.")
+      }
+
+      if ($content -match '\bconsole\.log\s*\(') {
+        $errors.Add("$p contains production console.log debug code.")
+      }
     }
 
     if ($block.Id -in @("10C","10D")) {
@@ -367,6 +407,67 @@ try {
         $service = Get-Content -Raw $servicePath
         if ($service -match ':\s*any\b') { $errors.Add("F03 livestock service contains ': any'.") }
         if ($service -match '\bdeleteAnimal\s*\(') { $errors.Add("F03 livestock service contains deleteAnimal(), which is outside F03.") }
+      }
+    }
+
+    if ($block.Id -eq "11Z") {
+      $guardPath = "backend/src/establishments/guards/establishment-ownership.guard.ts"
+      $estModulePath = "backend/src/establishments/establishment.module.ts"
+      $livestockModulePath = "backend/src/livestock/livestock.module.ts"
+      $livestockControllerPath = "backend/src/livestock/livestock.controller.ts"
+      if ((Get-Content -Raw $guardPath) -notmatch 'params\.establishmentId') { $errors.Add("11Z guard must support :establishmentId.") }
+      if ((Get-Content -Raw $estModulePath) -notmatch 'exports\s*:.*EstablishmentService') { $errors.Add("11Z EstablishmentModule must export EstablishmentService.") }
+      if ((Get-Content -Raw $livestockModulePath) -notmatch 'exports\s*:.*LivestockService') { $errors.Add("11Z LivestockModule must export LivestockService.") }
+      $lc = Get-Content -Raw $livestockControllerPath
+      if ($lc -notmatch 'JwtAuthGuard' -or $lc -notmatch 'EstablishmentOwnershipGuard') { $errors.Add("11Z LivestockController must use JWT and establishment ownership guards.") }
+    }
+
+    if ($block.Id -eq "13P") {
+      $est = Get-Content -Raw "backend/src/entities/establishment.entity.ts"
+      $ctl = Get-Content -Raw "backend/src/establishments/establishment.controller.ts"
+      if ($est -notmatch 'participatesInBenchmark' -or $est -notmatch 'productionSystem' -or $est -notmatch 'activity') { $errors.Add("13P Establishment benchmark profile fields are incomplete.") }
+      if ($ctl -notmatch 'benchmark-settings') { $errors.Add("13P benchmark-settings endpoint is missing.") }
+    }
+
+    $moduleExports = @{
+      "12B" = @("backend/src/indicators/indicators.module.ts","IndicatorsService")
+      "13B" = @("backend/src/benchmark/benchmark.module.ts","BenchmarkService")
+      "14B" = @("backend/src/alerts/alerts.module.ts","AlertsService")
+      "15B" = @("backend/src/weather/weather.module.ts","WeatherService")
+      "16A" = @("backend/src/ai-audit/ai-audit.module.ts","AiAuditService")
+    }
+    if ($moduleExports.ContainsKey($block.Id)) {
+      $pair = $moduleExports[$block.Id]
+      if (Test-Path $pair[0]) {
+        $mc = Get-Content -Raw $pair[0]
+        if ($mc -notmatch 'exports\s*:' -or $mc -notmatch [regex]::Escape($pair[1])) {
+          $errors.Add("$($block.Id) $($pair[0]) must export $($pair[1]) for downstream DI.")
+        }
+      }
+    }
+
+    if ($block.Id -in @("12C","13C","14B","15B","16F","17C","18A")) {
+      if (Test-Path "backend/src/app.module.ts") {
+        $app = Get-Content -Raw "backend/src/app.module.ts"
+        foreach ($required in @("AuthModule","EstablishmentModule","LivestockModule")) {
+          if ($app -notmatch [regex]::Escape($required)) { $errors.Add("AppModule lost required prior module $required.") }
+        }
+      }
+    }
+
+    if ($block.Id -eq "13B" -and (Test-Path "backend/src/db/migrations/1790000002000-F05Benchmark.ts")) {
+      $mig = Get-Content -Raw "backend/src/db/migrations/1790000002000-F05Benchmark.ts"
+      if ($mig -notmatch 'participatesInBenchmark' -or $mig -notmatch 'productionSystem' -or $mig -notmatch 'activity') {
+        $errors.Add("F05 migration must persist the benchmark profile columns.")
+      }
+    }
+
+    if ($block.Id -eq "15C") {
+      foreach ($p in $changed) {
+        if ($p.StartsWith("mobile/") -and (Test-Path $p)) {
+          $wc = Get-Content -Raw $p
+          if ($wc -match 'open-meteo|WEATHER_BASE_URL|weather\.open-meteo') { $errors.Add("$p calls/references external weather provider from mobile.") }
+        }
       }
     }
 
@@ -476,11 +577,14 @@ try {
     Write-Host "Model: $model" -ForegroundColor DarkCyan
     Write-Host "Editable: $($editable.Count) | Read-only: $(@($readPaths|Sort-Object -Unique).Count)" -ForegroundColor DarkCyan
 
+    $previousErrorAction = $ErrorActionPreference
     try {
+      $ErrorActionPreference = "Continue"
       & aider @args
       $code=$LASTEXITCODE
     }
     finally {
+      $ErrorActionPreference = $previousErrorAction
       Remove-Item $promptFile -Force -ErrorAction SilentlyContinue
     }
 
@@ -669,7 +773,9 @@ $err
       $failure=$result.Output
     }
 
-    Fail "Block $($block.Id) failed after worker repairs and rescue. Last failure:`n$failure"
+    Reset-BlockChanges $block $before
+    Restore-ForbiddenChanges $block $before | Out-Null
+    Fail "Block $($block.Id) failed after worker repairs and rescue. Changes from the failed block were reset automatically. Last failure:`n$failure"
   }
 
   $startIndex=-1
@@ -687,6 +793,11 @@ $err
   Write-Host "Context: repo-map OFF / map-tokens 0 / narrow read-only context"
   Write-Host "Starting from: $StartFrom"
   Write-Host "No tests. No push.`n"
+
+  Write-Host "== PREFLIGHT COMPILE ==" -ForegroundColor Cyan
+  $preflight = Invoke-Gate "both"
+  if (-not $preflight.Success) { Fail "Baseline does not compile before starting $StartFrom. Fix baseline first.`n$($preflight.Output)" }
+  Write-Host "PREFLIGHT GREEN.`n" -ForegroundColor Green
 
   foreach($block in $blocks){
     Write-Host "== Block $($block.Id): $($block.Name) ==" -ForegroundColor Cyan
