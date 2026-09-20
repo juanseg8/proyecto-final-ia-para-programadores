@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$StartFrom = "05",
   [int]$MaxCompileRepairAttempts = 2,
   [int]$MaxRescueAttempts = 1
@@ -6,6 +6,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 function Fail([string]$message) { throw $message }
+function Stop-OllamaModel([string]$model) {
+  if ([string]::IsNullOrWhiteSpace($model)) {
+    return
+  }
+
+  # Best-effort: que el modelo no esté cargado NO es un error.
+  & cmd.exe /d /s /c "ollama stop `"$model`" >nul 2>&1"
+  $null = $LASTEXITCODE
+}
 
 $repoRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
 if (-not $repoRoot) { Fail "Not inside a git repository." }
@@ -285,8 +294,7 @@ try {
     foreach ($p in $bad) {
       Write-Host "RESTORE FORBIDDEN: $p" -ForegroundColor Red
 
-      & git ls-files --error-unmatch -- "$p" *> $null
-      $tracked = ($LASTEXITCODE -eq 0)
+      $tracked = (@(& git ls-files -- "$p")).Count -gt 0
 
       if ($tracked) {
         & git restore --source=HEAD --staged --worktree -- "$p"
@@ -401,12 +409,12 @@ try {
 
   function Switch-LocalModel([string]$role) {
     if ($role -eq "worker") {
-      & ollama stop $RescueOllamaModel *> $null
+      Stop-OllamaModel $RescueOllamaModel
       Start-Sleep -Seconds 1
       return
     }
     if ($role -eq "rescue") {
-      & ollama stop $WorkerOllamaModel *> $null
+      Stop-OllamaModel $WorkerOllamaModel
       Start-Sleep -Seconds 1
       return
     }
