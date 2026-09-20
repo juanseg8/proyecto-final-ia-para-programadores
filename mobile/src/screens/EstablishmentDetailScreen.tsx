@@ -2,19 +2,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AppScreen, AppHeader, AppButton, AppCard, BottomNav } from '../components';
-import { useTheme } from 'styled-components/native';
+import theme from '../theme/theme';
 
 const EstablishmentDetailScreen = ({ route, navigation }: { route: any; navigation: any }) => {
   const { establishment } = route.params;
-  const theme = useTheme();
 
   return (
     <AppScreen>
       <AppHeader title="Detalle del Establecimiento" />
       <View style={styles.container}>
         <AppCard title={establishment.name}>
-          <Text style={[styles.text, { color: theme.colors.text }]}>Tipo: {establishment.type}</Text>
-          <Text style={[styles.text, { color: theme.colors.text }]}>Dirección: {establishment.address}</Text>
+          <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Tipo: {establishment.type}</Text>
+          <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Dirección: {establishment.address}</Text>
         </AppCard>
         <AppButton
           title="Editar Establecimiento"

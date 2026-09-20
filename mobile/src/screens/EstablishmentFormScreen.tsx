@@ -2,13 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AppScreen, AppHeader, AppButton, FormField, BottomNav } from '../components';
-import { useTheme } from 'styled-components/native';
+import theme from '../theme/theme';
 
 const EstablishmentFormScreen = ({ route, navigation }: { route: any; navigation: any }) => {
   const [name, setName] = useState('');
   const [type, setType] = useState('');
   const [address, setAddress] = useState('');
-  const theme = useTheme();
 
   useEffect(() => {
     if (route.params?.establishment) {
@@ -33,7 +32,7 @@ const EstablishmentFormScreen = ({ route, navigation }: { route: any; navigation
     <AppScreen>
       <AppHeader title={route.params?.establishment ? 'Editar Establecimiento' : 'Agregar Establecimiento'} />
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
           {route.params?.establishment ? 'Editar Establecimiento' : 'Agregar Establecimiento'}
         </Text>
         <FormField

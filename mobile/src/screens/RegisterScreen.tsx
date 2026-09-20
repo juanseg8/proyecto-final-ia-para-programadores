@@ -2,14 +2,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AppScreen, AppHeader, AppButton, FormField } from '../components';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const RegisterScreen = ({ navigation }: { navigation: any }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const theme = useTheme();
 
   const handleRegister = () => {
     // Registration logic would go here
@@ -21,7 +20,7 @@ const RegisterScreen = ({ navigation }: { navigation: any }) => {
     <AppScreen>
       <AppHeader title="Registrarse" />
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Registrarse</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Registrarse</Text>
         <FormField
           label="Nombre"
           value={name}

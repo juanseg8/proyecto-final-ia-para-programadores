@@ -1,14 +1,12 @@
 // entire file content ...
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
-const AppCard = ({ title, children }: { title: string; children: React.ReactNode }) => {
-  const theme = useTheme();
-
+export const AppCard = ({ title, children }: { title: string; children: React.ReactNode }) => {
   return (
-    <View style={[styles.card, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+    <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -16,21 +14,19 @@ const AppCard = ({ title, children }: { title: string; children: React.ReactNode
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 8,
+    borderRadius: theme.radius.card,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: theme.spacing[16],
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    padding: 16,
-    backgroundColor: '#f5f5f5',
+    fontSize: theme.typography.h3.fontSize,
+    fontWeight: theme.typography.h3.fontWeight,
+    padding: theme.spacing[16],
+    backgroundColor: theme.colors.surfaceSecondary,
   },
   content: {
-    padding: 16,
+    padding: theme.spacing[16],
   },
 });
-
-export default AppCard;

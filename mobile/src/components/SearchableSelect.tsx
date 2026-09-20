@@ -1,3 +1,4 @@
+// entire file content ...
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import { theme } from '../theme/theme';

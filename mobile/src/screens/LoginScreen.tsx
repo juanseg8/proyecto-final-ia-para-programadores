@@ -2,12 +2,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AppScreen, AppHeader, AppButton, FormField } from '../components';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const theme = useTheme();
 
   const handleLogin = () => {
     // Login logic would go here
@@ -19,7 +18,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
     <AppScreen>
       <AppHeader title="Iniciar Sesión" />
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Iniciar Sesión</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Iniciar Sesión</Text>
         <FormField
           label="Correo Electrónico"
           value={email}

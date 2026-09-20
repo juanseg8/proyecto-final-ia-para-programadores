@@ -1,24 +1,22 @@
 // entire file content ...
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const BottomNav = ({ navigation }: { navigation: any }) => {
-  const theme = useTheme();
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('Home')}
       >
-        <Text style={[styles.text, { color: theme.colors.text }]}>Inicio</Text>
+        <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Inicio</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.button}
         onPress={() => navigation.navigate('EstablishmentList')}
       >
-        <Text style={[styles.text, { color: theme.colors.text }]}>Establecimientos</Text>
+        <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Establecimientos</Text>
       </TouchableOpacity>
     </View>
   );

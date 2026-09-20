@@ -2,16 +2,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AppScreen, AppHeader, AppButton, BottomNav } from '../components';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const HomeScreen = ({ navigation }: { navigation: any }) => {
-  const theme = useTheme();
 
   return (
     <AppScreen>
       <AppHeader title="Inicio" />
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Bienvenido</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Bienvenido</Text>
         <AppButton
           title="Ver Establecimientos"
           onPress={() => navigation.navigate('EstablishmentList')}

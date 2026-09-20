@@ -2,11 +2,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { AppScreen, AppHeader, AppButton, AppCard, BottomNav } from '../components';
-import { useTheme } from 'styled-components/native';
+import theme from '../theme/theme';
 
 const EstablishmentListScreen = ({ navigation }: { navigation: any }) => {
-  const theme = useTheme();
-
   // Mock data - in a real app this would come from an API
   const establishments = [
     { id: '1', name: 'Granja Los Ángeles', type: 'Granja', address: 'Calle 123, Ciudad' },
@@ -18,14 +16,14 @@ const EstablishmentListScreen = ({ navigation }: { navigation: any }) => {
     <AppScreen>
       <AppHeader title="Establecimientos" />
       <View style={styles.container}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Lista de Establecimientos</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Lista de Establecimientos</Text>
         <FlatList
           data={establishments}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <AppCard title={item.name}>
-              <Text style={[styles.text, { color: theme.colors.text }]}>Tipo: {item.type}</Text>
-              <Text style={[styles.text, { color: theme.colors.text }]}>Dirección: {item.address}</Text>
+              <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Tipo: {item.type}</Text>
+              <Text style={[styles.text, { color: theme.colors.textPrimary }]}>Dirección: {item.address}</Text>
               <AppButton
                 title="Ver Detalles"
                 onPress={() => navigation.navigate('EstablishmentDetail', { establishment: item })}

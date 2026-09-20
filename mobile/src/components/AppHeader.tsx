@@ -1,14 +1,12 @@
 // entire file content ...
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const AppHeader = ({ title }: { title: string }) => {
-  const theme = useTheme();
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>
-      <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.forest }]}>
+      <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
     </View>
   );
 };

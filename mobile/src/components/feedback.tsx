@@ -1,11 +1,9 @@
 // entire file content ...
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from 'styled-components/native';
+import { theme } from '../theme/theme';
 
 const Feedback = ({ type, message }: { type: 'success' | 'error' | 'info'; message: string }) => {
-  const theme = useTheme();
-
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':

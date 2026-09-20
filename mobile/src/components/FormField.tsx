@@ -1,10 +1,10 @@
 // entire file content ...
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from 'styled-components/native';
-import AppInput from './AppInput';
+import { theme } from '../theme/theme';
+import { AppInput } from './AppInput';
 
-const FormField = ({
+export const FormField = ({
   label,
   value,
   onChangeText,
@@ -17,11 +17,9 @@ const FormField = ({
   error?: string;
   secureTextEntry?: boolean;
 }) => {
-  const theme = useTheme();
-
   return (
     <View style={styles.container}>
-      <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.textPrimary }]}>{label}</Text>
       <AppInput
         value={value}
         onChangeText={onChangeText}
@@ -34,12 +32,11 @@ const FormField = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: theme.spacing[16],
   },
   label: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: theme.typography.label.fontSize,
+    fontWeight: theme.typography.label.fontWeight,
+    marginBottom: theme.spacing[8],
   },
 });
-
-export default FormField;
