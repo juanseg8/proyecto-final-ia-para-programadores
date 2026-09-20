@@ -97,14 +97,14 @@ try {
     B "11A" "11" "F03 mobile herds" "night-tasks/11-f03-mobile.md" "mobile" @(
       "mobile/src/screens/LivestockScreen.tsx","mobile/src/screens/HerdDetailScreen.tsx","mobile/src/screens/CreateHerdScreen.tsx"
     ) @(
-      "specs/features/F03-gestion-ganadera.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts"
-    ) "Implement herd list/create/detail against the real backend. Spanish UX01 UI only. No fake data or placeholder metrics. Do not wire global navigation yet."
+      "specs/features/F03-gestion-ganadera.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts","mobile/src/components/AppInput.tsx","mobile/src/components/AppCard.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/Feedback.tsx","mobile/App.tsx","mobile/src/screens/EstablishmentListScreen.tsx"
+    ) "Implement herd list/create/detail against the real backend. Spanish UX01 UI only. No fake data or placeholder metrics. Do not wire global navigation yet. Follow the EXISTING shared component APIs exactly: AppInput does not accept children, AppCard accepts only title + children, AppButton uses title/onPress/destructive. Import theme from ../theme/theme. Because CreateHerd/HerdDetail routes are intentionally wired only in 11C, follow the current project screen prop pattern ({ route, navigation }: { route: any; navigation: any }) instead of inventing a typed ParamList in this block."
 
     B "11B" "11" "F03 mobile animal events" "night-tasks/11-f03-mobile.md" "mobile" @(
       "mobile/src/screens/CreateAnimalScreen.tsx","mobile/src/screens/RegisterWeighingScreen.tsx","mobile/src/screens/RegisterLivestockEventScreen.tsx"
     ) @(
-      "specs/features/F03-gestion-ganadera.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts","mobile/src/screens/HerdDetailScreen.tsx"
-    ) "Implement create animal, register weighing and livestock event screens against the real backend. Spanish UX01 UI. No fake data."
+      "specs/features/F03-gestion-ganadera.md","specs/ui/UX01-Design-System.md","mobile/src/apiClient.ts","mobile/src/theme/theme.ts","mobile/src/components/index.ts","mobile/src/components/AppInput.tsx","mobile/src/components/AppCard.tsx","mobile/src/components/AppButton.tsx","mobile/src/components/Feedback.tsx","mobile/src/screens/HerdDetailScreen.tsx"
+    ) "Implement create animal, register weighing and livestock event screens against the real backend. Spanish UX01 UI. No fake data. Follow the existing AppInput/AppCard/AppButton/Feedback component APIs exactly; do not invent props. Keep navigation wiring for 11C and follow the existing untyped screen prop pattern where route/navigation props are needed."
 
     B "11C" "11" "F03 mobile navigation" "night-tasks/11-f03-mobile.md" "mobile" @(
       "mobile/App.tsx","mobile/src/screens/EstablishmentDetailScreen.tsx"
