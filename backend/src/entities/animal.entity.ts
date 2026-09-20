@@ -7,7 +7,7 @@ export class Animal {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
+  @Column({ unique: true })
   tag!: string;
 
   @Column()

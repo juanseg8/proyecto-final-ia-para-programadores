@@ -33,12 +33,12 @@ export class LivestockEvent {
   @Column()
   establishmentId!: string;
 
-  @ManyToOne(() => Herd, { nullable: false })
+  @ManyToOne(() => Herd, { nullable: true })
   @JoinColumn({ name: 'herdId' })
-  herd!: Herd;
+  herd!: Herd | null;
 
-  @Column()
-  herdId!: string;
+  @Column({ nullable: true })
+  herdId!: string | null;
 
   @ManyToOne(() => Animal, { nullable: true })
   @JoinColumn({ name: 'animalId' })
