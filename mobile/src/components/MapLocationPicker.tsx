@@ -34,6 +34,7 @@ const MapLocationPicker: React.FC<Props> = ({ onLocationSelected }) => {
           longitude: location.coords.longitude,
         });
       }
+      // If permission denied, continue without error - manual selection remains available
     } catch (error) {
       // Catch error without fatal notification, allowing manual movement
     }
@@ -55,20 +56,20 @@ const MapLocationPicker: React.FC<Props> = ({ onLocationSelected }) => {
             <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
           </MapView>
           <View style={styles.buttonContainer}>
-            <AppButton 
-              title="Usar mi ubicación actual" 
-              onPress={handleUseCurrentLocation} 
-              style={styles.buttonSpacing} 
+            <AppButton
+              title="Usar mi ubicación actual"
+              onPress={handleUseCurrentLocation}
+              style={styles.buttonSpacing}
             />
-            <AppButton 
-              title="Confirmar ubicación" 
-              onPress={handleConfirm} 
-              style={styles.buttonSpacing} 
+            <AppButton
+              title="Confirmar ubicación"
+              onPress={handleConfirm}
+              style={styles.buttonSpacing}
             />
-            <AppButton 
-              title="Cancelar" 
-              onPress={() => setModalVisible(false)} 
-              style={styles.cancelButton} 
+            <AppButton
+              title="Cancelar"
+              onPress={() => setModalVisible(false)}
+              style={styles.cancelButton}
             />
           </View>
         </View>
