@@ -146,7 +146,7 @@ try {
       "backend/src/entities/benchmark-snapshot.entity.ts","backend/src/benchmark/benchmark.config.ts","backend/src/benchmark/benchmark.service.ts"
     ) @(
       "specs/features/F05-benchmark-anonimo.md","specs/constitution.md","backend/src/entities/establishment.entity.ts","backend/src/entities/indicator-snapshot.entity.ts","backend/src/indicators/indicators.service.ts","backend/src/establishments/establishment.service.ts","backend/package.json"
-    ) "Implement F05 benchmark core exactly to spec. K_MIN must come from typed startup configuration and can never be below 10. Respect opt-in, exclude self, never relax activity, progressively relax only the specified dimensions, and publish no aggregates or peerGroupSize below k. Never return third-party IDs/rows. Use explicit parameterized SQL through existing TypeORM/DataSource facilities where aggregation needs SQL; do NOT use QueryBuilder chains for benchmark aggregation and do not add packages."
+    ) "Implement F05 benchmark core exactly to spec. K_MIN must come from typed startup configuration and can never be below 10. Respect opt-in, exclude self, never relax activity, progressively relax only the specified dimensions, and publish no aggregates or peerGroupSize below k. Never return third-party IDs/rows. Use explicit parameterized SQL through existing TypeORM/DataSource facilities where aggregation needs SQL; do NOT use QueryBuilder chains for benchmark aggregation and do not add packages. IMPORTANT under strict TypeScript: every raw SQL result shape must have an explicit local interface/type and every callback parameter (for example rows.map(row => ...), filter, reduce, sort) must be explicitly typed or inferred from a typed array. Never leave implicit-any callback parameters."
 
     B "13B" "13" "F05 API migration" "night-tasks/13-f05-benchmark.md" "backend" @(
       "backend/src/benchmark/benchmark.controller.ts","backend/src/benchmark/benchmark.module.ts","backend/src/db/migrations/1790000002000-F05Benchmark.ts"
@@ -651,6 +651,8 @@ Rules:
 - Do not create/edit files outside the allowlist.
 - Do not add dependencies, edit tests, commit or push.
 - Preserve already-correct behavior and spec invariants.
+- Under strict TypeScript, fix the exact compiler diagnostic. For TS7006 implicit-any errors, add a precise local/interface type for the value/callback parameter instead of using any or suppressing the error.
+- If raw SQL is involved, type the returned rows before map/filter/reduce/sort.
 
 CURRENT FAILURE:
 $err
@@ -686,6 +688,7 @@ Critical rules:
 - Fix only what is required for this block to satisfy its goal, compile/type-check, and preserve invariants.
 - Do not redesign architecture, add dependencies, edit tests, commit or push.
 - Do not use 'any' to silence TypeScript errors when a real project type/DTO exists.
+- Under strict TypeScript, TS7006 must be fixed with a precise explicit type/interface for raw rows or callback parameters; never leave map/filter/reduce/sort callback parameters implicit.
 - NestJS uses @nestjs/typeorm in lowercase.
 - Preserve ownership/security checks; foreign nested resources must not leak across establishments.
 - No fake data or fake metrics.
