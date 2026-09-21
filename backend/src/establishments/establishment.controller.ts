@@ -2,6 +2,7 @@ import { Controller, Post, Get, Put, Delete, Body, UseGuards, Req, Param } from 
 import { EstablishmentService } from './establishment.service';
 import { CreateEstablishmentDto } from './dto/create-establishment.dto';
 import { UpdateEstablishmentDto } from './dto/update-establishment.dto';
+import { UpdateBenchmarkSettingsDto } from './dto/update-benchmark-settings.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EstablishmentOwnershipGuard } from './guards/establishment-ownership.guard';
 
@@ -31,6 +32,12 @@ export class EstablishmentController {
   @UseGuards(EstablishmentOwnershipGuard)
   async update(@Param('id') id: string, @Body() updateDto: UpdateEstablishmentDto) {
     return this.establishmentService.update(id, updateDto);
+  }
+
+  @Put(':id/benchmark-settings')
+  @UseGuards(EstablishmentOwnershipGuard)
+  async updateBenchmarkSettings(@Param('id') id: string, @Body() updateDto: UpdateBenchmarkSettingsDto) {
+    return this.establishmentService.updateBenchmarkSettings(id, updateDto);
   }
 
   @Delete(':id')

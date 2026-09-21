@@ -28,6 +28,15 @@ export class Establishment {
   @Column({ type: 'decimal' })
   superficieHa!: number;
 
+  @Column({ default: false })
+  participatesInBenchmark!: boolean;
+
+  @Column({ nullable: true })
+  activity!: string | null;
+
+  @Column({ nullable: true })
+  productionSystem!: string | null;
+
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'userId' })
   user!: User;

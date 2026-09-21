@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Establishment } from '../entities/establishment.entity';
 import { CreateEstablishmentDto } from './dto/create-establishment.dto';
 import { UpdateEstablishmentDto } from './dto/update-establishment.dto';
+import { UpdateBenchmarkSettingsDto } from './dto/update-benchmark-settings.dto';
 @Injectable()
 export class EstablishmentService {
   constructor(
@@ -28,6 +29,9 @@ export class EstablishmentService {
       province: createDto.province,
       locality: createDto.locality,
       userId: userId,
+      participatesInBenchmark: false,
+      activity: null,
+      productionSystem: null,
     });
 
     try {
@@ -87,6 +91,31 @@ export class EstablishmentService {
         throw new ConflictException('Establishment name already exists for this user.');
       }
       throw new InternalServerErrorException('Error updating establishment.');
+    }
+  }
+
+  async updateBenchmarkSettings(id: string, updateDto: UpdateBenchmarkSettingsDto): Promise<Establishment> {
+    const establishment = await this.findById(id);
+    if (!establishment) {
+      throw new NotFoundException('Establishment not found');
+    }
+
+    if (updateDto.participatesInBenchmark !== undefined) {
+      establishment.participatesInBenchmark = updateDto.participatesInBenchmark;
+    }
+
+    if (updateDto.activity !== undefined) {
+      establishment.activity = updateDto.activity;
+    }
+
+    if (updateDto.productionSystem !== undefined) {
+      establishment.productionSystem = updateDto.productionSystem;
+    }
+
+    try {
+      return await this.establishmentRepository.save(establishment);
+    } catch (error: any) {
+      throw new InternalServerErrorException('Error updating benchmark settings.');
     }
   }
 
