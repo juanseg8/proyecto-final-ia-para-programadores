@@ -36,3 +36,8 @@ Thumbs.db
 
 # Aider local runtime/history
 .aider*
+
+# Telegram secrets and night build runtime state (never commit)
+local-ai/telegram.env
+NIGHT_STATUS.json
+NIGHT_BUILD.pid

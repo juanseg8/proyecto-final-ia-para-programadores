@@ -2,10 +2,10 @@
   edit_format: whole
   use_repo_map: false
   extra_params:
-    num_ctx: 16384
+    num_ctx: 8192
 
-- name: ollama_chat/deepseek-coder-v2:16b
+- name: ollama_chat/deepseek-coder:6.7b
   edit_format: whole
   use_repo_map: false
   extra_params:
-    num_ctx: 16384
+    num_ctx: 8192

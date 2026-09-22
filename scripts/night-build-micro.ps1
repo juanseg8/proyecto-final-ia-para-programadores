@@ -1,7 +1,8 @@
 ﻿param(
   [string]$StartFrom = "05",
   [int]$MaxCompileRepairAttempts = 2,
-  [int]$MaxRescueAttempts = 2
+  [int]$MaxRescueAttempts = 2,
+  [int]$AiderTimeoutSec = 900
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,8 +32,8 @@ try {
 
   $WorkerAiderModel = "ollama_chat/agro-coder"
   $WorkerOllamaModel = "agro-coder"
-  $RescueAiderModel = "ollama_chat/deepseek-coder-v2:16b"
-  $RescueOllamaModel = "deepseek-coder-v2:16b"
+  $RescueAiderModel = "ollama_chat/deepseek-coder:6.7b"
+  $RescueOllamaModel = "deepseek-coder:6.7b"
 
   & cmd.exe /d /s /c "ollama show `"$WorkerOllamaModel`" >nul 2>&1"
   if ($LASTEXITCODE -ne 0) { Fail "Ollama model '$WorkerOllamaModel' is not available." }
@@ -40,6 +41,25 @@ try {
   if ($LASTEXITCODE -ne 0) { Fail "Ollama rescue model '$RescueOllamaModel' is not available." }
 
   $env:OLLAMA_API_BASE = "http://127.0.0.1:11434"
+
+  . (Join-Path $repoRoot "local-ai/telegram-notify.ps1")
+  Import-TelegramEnv (Join-Path $repoRoot "local-ai/telegram.env")
+
+  $script:CurrentBlockId = "(preflight)"
+  $pidFile = Join-Path $repoRoot "NIGHT_BUILD.pid"
+  $statusFile = Join-Path $repoRoot "NIGHT_STATUS.json"
+  $logFile = Join-Path $repoRoot "night-build.log"
+  $PID | Set-Content -Path $pidFile
+
+  # Redefine Fail now that Telegram + status helpers are loaded: every hard
+  # stop is reported to Telegram with the block that was in progress, and the
+  # status file is marked FAILED so the remote control script / your phone
+  # can show the real state instead of a stale "running".
+  function Fail([string]$message) {
+    Write-NightStatus $statusFile @{ lastBlock=$script:CurrentBlockId; result="FAILED"; message=$message }
+    Send-TelegramMessage "NIGHT BUILD DETENIDO en bloque $($script:CurrentBlockId).`n$message`n`nPara reanudar: -StartFrom $($script:CurrentBlockId)"
+    throw $message
+  }
 
   function B([string]$Id,[string]$Task,[string]$Name,[string]$TaskFile,[string]$Gate,[string[]]$Editable,[string[]]$Read,[string]$Goal,[bool]$AllowNoChanges=$false) {
     @{ Id=$Id; Task=$Task; Name=$Name; TaskFile=$TaskFile; Gate=$Gate; Editable=$Editable; Read=$Read; Goal=$Goal; AllowNoChanges=$AllowNoChanges }
@@ -577,18 +597,36 @@ try {
     Write-Host "Model: $model" -ForegroundColor DarkCyan
     Write-Host "Editable: $($editable.Count) | Read-only: $(@($readPaths|Sort-Object -Unique).Count)" -ForegroundColor DarkCyan
 
-    $previousErrorAction = $ErrorActionPreference
-    try {
-      $ErrorActionPreference = "Continue"
-      & aider @args
-      $code=$LASTEXITCODE
+    "=== $(Get-Date -Format o) | block $($block.Id) role $role model $model ===" | Add-Content -Path $logFile -Encoding utf8
+
+    $stdOutFile = Join-Path $env:TEMP "agro-night-build-out-$([Guid]::NewGuid().ToString('N')).txt"
+    $stdErrFile = Join-Path $env:TEMP "agro-night-build-err-$([Guid]::NewGuid().ToString('N')).txt"
+
+    $proc = Start-Process -FilePath "aider" -ArgumentList $args -NoNewWindow -PassThru `
+      -RedirectStandardOutput $stdOutFile -RedirectStandardError $stdErrFile
+
+    $finishedInTime = $proc.WaitForExit($AiderTimeoutSec * 1000)
+
+    if (-not $finishedInTime) {
+      Write-Host "Aider timed out after $AiderTimeoutSec s on block $($block.Id) - killing process." -ForegroundColor Red
+      try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
+      $code = -1
     }
-    finally {
-      $ErrorActionPreference = $previousErrorAction
-      Remove-Item $promptFile -Force -ErrorAction SilentlyContinue
+    else {
+      $code = $proc.ExitCode
     }
 
-    @{ Success=($code -eq 0); ExitCode=$code }
+    $combinedOutput = ""
+    if (Test-Path $stdOutFile) { $combinedOutput += (Get-Content -Raw $stdOutFile -ErrorAction SilentlyContinue) }
+    if (Test-Path $stdErrFile) { $combinedOutput += "`n" + (Get-Content -Raw $stdErrFile -ErrorAction SilentlyContinue) }
+    if (-not $finishedInTime) { $combinedOutput = "TIMEOUT after $AiderTimeoutSec s.`n$combinedOutput" }
+
+    $combinedOutput | Add-Content -Path $logFile -Encoding utf8
+    Write-Host $combinedOutput
+
+    Remove-Item $stdOutFile,$stdErrFile,$promptFile -Force -ErrorAction SilentlyContinue
+
+    @{ Success=($code -eq 0); ExitCode=$code; Output=$combinedOutput }
   }
 
   function Get-EditableList([hashtable]$block) {
@@ -797,6 +835,8 @@ $err
   Write-Host "Starting from: $StartFrom"
   Write-Host "No tests. No push.`n"
 
+  Send-TelegramMessage "Night build arrancando desde $StartFrom ($($blocks.Count) bloques por delante)."
+
   Write-Host "== PREFLIGHT COMPILE ==" -ForegroundColor Cyan
   $preflight = Invoke-Gate "both"
   if (-not $preflight.Success) { Fail "Baseline does not compile before starting $StartFrom. Fix baseline first.`n$($preflight.Output)" }
@@ -804,6 +844,8 @@ $err
 
   foreach($block in $blocks){
     Write-Host "== Block $($block.Id): $($block.Name) ==" -ForegroundColor Cyan
+    $script:CurrentBlockId = $block.Id
+    Write-NightStatus $statusFile @{ lastBlock=$block.Id; result="RUNNING" }
 
     if (git status --porcelain --untracked-files=all) {
       Fail "Working tree became dirty before block $($block.Id). Previous block should have committed cleanly."
@@ -832,6 +874,8 @@ $err
       if(-not $block.AllowNoChanges){Fail "Block $($block.Id) ended with no changes."}
       Write-Host "NO-OP GREEN: block $($block.Id)" -ForegroundColor Green
     }
+    Write-NightStatus $statusFile @{ lastBlock=$block.Id; result="GREEN" }
+    Send-TelegramMessage "OK $($block.Id) - $($block.Name)"
     Write-Host ""
   }
 
@@ -839,5 +883,12 @@ $err
   $final=Invoke-Gate "both"; if(-not $final.Success){Fail "Final MVP compile failed."}
   Write-Host "NIGHT BUILD FINISHED GREEN." -ForegroundColor Green
   Write-Host "No tests were run. No push was performed."
+  Write-NightStatus $statusFile @{ lastBlock=$script:CurrentBlockId; result="FINISHED_GREEN" }
+  Send-TelegramMessage "NIGHT BUILD TERMINADO OK. Todos los bloques desde $StartFrom quedaron GREEN y commiteados. Sin push."
 }
-finally { Pop-Location }
+finally {
+  if (Test-Path variable:pidFile) {
+    Remove-Item -Path $pidFile -Force -ErrorAction SilentlyContinue
+  }
+  Pop-Location
+}
