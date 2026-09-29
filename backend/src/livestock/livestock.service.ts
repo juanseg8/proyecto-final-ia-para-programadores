@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 
 import { CreateHerdDto, UpdateHerdDto } from './dto/herd.dto';
 import { CreateAnimalDto, UpdateAnimalDto } from './dto/animal.dto';
@@ -49,14 +49,26 @@ export class LivestockService {
     return this.herdRepository.save(herd);
   }
 
-  async findHerds(establishmentId: string): Promise<Herd[]> {
-    return this.herdRepository.find({
-      where: {
-        establishmentId,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
+  async findHerds(establishmentId: string): Promise<any[]> {
+    const herds = await this.herdRepository.find({
+      where: { establishmentId },
+      order: { createdAt: 'DESC' },
+    });
+
+    const animalCounts = await this.animalRepository.createQueryBuilder('animal')
+      .select('animal.herdId', 'herdId')
+      .addSelect('COUNT(animal.id)', 'count')
+      .where('animal.establishmentId = :establishmentId', { establishmentId })
+      .andWhere('animal.status != :status', { status: 'SOLD' })
+      .groupBy('animal.herdId')
+      .getRawMany();
+
+    return herds.map(herd => {
+      const countMatch = animalCounts.find(ac => ac.herdId === herd.id);
+      return {
+        ...herd,
+        animalCount: countMatch ? parseInt(countMatch.count, 10) : 0,
+      };
     });
   }
 
@@ -150,17 +162,58 @@ export class LivestockService {
 
   async findAnimals(
     establishmentId: string,
-  ): Promise<Animal[]> {
-    return this.animalRepository.find({
-      where: {
-        establishmentId,
-      },
+    herdId?: string,
+  ): Promise<any[]> {
+    const where: any = { establishmentId };
+    if (herdId) where.herdId = herdId;
+
+    const animals = await this.animalRepository.find({
+      where,
       relations: {
         herd: true,
       },
       order: {
         createdAt: 'DESC',
       },
+    });
+
+    if (animals.length === 0) return [];
+
+    const animalIds = animals.map(a => a.id);
+    const weighings = await this.weighingRepository.find({
+      where: { animalId: In(animalIds) },
+      order: { weighedAt: 'DESC' }
+    });
+
+    const now = new Date();
+
+    return animals.map(animal => {
+      const animalWeighings = weighings.filter(w => w.animalId === animal.id);
+      const lastWeighing = animalWeighings[0];
+
+      let ageMonths = null;
+      let category = 'Categoría';
+
+      if (animal.birthDate) {
+        const bd = new Date(animal.birthDate);
+        ageMonths = (now.getFullYear() - bd.getFullYear()) * 12 + now.getMonth() - bd.getMonth();
+        if (now.getDate() < bd.getDate()) ageMonths--;
+        if (ageMonths < 0) ageMonths = 0;
+
+        if (animal.sex === 'M') {
+           category = ageMonths <= 12 ? 'Ternero' : (ageMonths <= 24 ? 'Novillito' : (ageMonths <= 36 ? 'Toro' : 'Toro'));
+        } else {
+           category = ageMonths <= 12 ? 'Ternera' : (ageMonths <= 24 ? 'Vaquillona' : 'Vaca');
+        }
+      }
+
+      return {
+        ...animal,
+        ageMonths,
+        category,
+        lastWeight: lastWeighing ? lastWeighing.weightKg : 0,
+        lastWeightDate: lastWeighing ? new Date(lastWeighing.weighedAt).toLocaleDateString('es-AR') : 'N/A'
+      };
     });
   }
 
@@ -257,11 +310,13 @@ export class LivestockService {
 
   async findWeighings(
     establishmentId: string,
+    animalId?: string,
   ): Promise<Weighing[]> {
+    const where: any = { establishmentId };
+    if (animalId) where.animalId = animalId;
+
     return this.weighingRepository.find({
-      where: {
-        establishmentId,
-      },
+      where,
       relations: {
         herd: true,
         animal: true,
@@ -305,6 +360,19 @@ export class LivestockService {
       if (!animal) {
         throw new NotFoundException('Animal no encontrado');
       }
+
+      let updateAnimal = false;
+      if (createLivestockEventDto.type === 'DEATH' && animal.status !== 'DEAD') {
+        animal.status = 'DEAD';
+        updateAnimal = true;
+      } else if (createLivestockEventDto.type === 'SALE' && animal.status !== 'SOLD') {
+        animal.status = 'SOLD';
+        updateAnimal = true;
+      }
+
+      if (updateAnimal) {
+        await this.animalRepository.save(animal);
+      }
     }
 
     const livestockEvent = this.livestockEventRepository.create({
@@ -317,11 +385,13 @@ export class LivestockService {
 
   async findLivestockEvents(
     establishmentId: string,
+    animalId?: string,
   ): Promise<LivestockEvent[]> {
+    const where: any = { establishmentId };
+    if (animalId) where.animalId = animalId;
+
     return this.livestockEventRepository.find({
-      where: {
-        establishmentId,
-      },
+      where,
       relations: {
         herd: true,
         animal: true,

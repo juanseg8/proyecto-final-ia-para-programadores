@@ -5,7 +5,7 @@ import { Establishment } from '../entities/establishment.entity';
 import { BenchmarkSnapshot } from '../entities/benchmark-snapshot.entity';
 import { BenchmarkConfig, DEFAULT_BENCHMARK_CONFIG } from './benchmark.config';
 
-interface PeerGroupResult {
+export interface PeerGroupResult {
   median: number;
   p25: number;
   p75: number;
@@ -20,12 +20,12 @@ interface PeerGroupResult {
   };
 }
 
-interface RawPeerRow {
-  value: number;
-  establishment_id: string;
+export interface RawPeerRow {
+  value: number | string;
+  establishmentId: string;
 }
 
-interface BenchmarkError {
+export interface BenchmarkError {
   status: 'DATOS_INSUFICIENTES';
   reason: 'peer_group_below_minimum' | 'establishment_not_participating' | 'missing_activity_or_system';
 }
@@ -176,11 +176,11 @@ export class BenchmarkService {
     const query = `
       SELECT e.id as establishment_id
       FROM establishments e
-      WHERE e.participatesInBenchmark = true
+      WHERE e."participatesInBenchmark" = true
         AND e.activity = $1
-        AND e.productionSystem = ANY(STRING_TO_ARRAY($2, ','))
-        AND e.province = $3
-        AND e.superficieHa BETWEEN $4 * (1 - $5) AND $4 * (1 + $5)
+        AND e."productionSystem" = ANY(STRING_TO_ARRAY($2, ','))
+        AND ($3::text = 'national' OR $3::text = 'region' OR e.province = $3)
+        AND e."superficieHa"::numeric BETWEEN $4::numeric * (1.0 - $5::numeric) AND $4::numeric * (1.0 + $5::numeric)
         AND e.id != $6
     `;
 
@@ -208,23 +208,24 @@ export class BenchmarkService {
     // Get indicator values for peer group and establishment
     const query = `
       SELECT
-        COALESCE(is.value, 0) as value,
-        is.establishmentId
-      FROM indicator_snapshots is
-      WHERE is.establishmentId = ANY($1)
-        AND is.periodFrom >= $2
-        AND is.periodTo <= $3
-        AND is.${indicatorName} IS NOT NULL
+        COALESCE(snap."${indicatorName}", 0) as value,
+        snap."establishmentId"
+      FROM indicator_snapshots snap
+      WHERE snap."establishmentId"::text = ANY(STRING_TO_ARRAY($1, ','))
+        AND snap."periodFrom"::DATE <= $3::DATE
+        AND snap."periodTo"::DATE >= $2::DATE
+        AND snap."${indicatorName}" IS NOT NULL
     `;
 
-    const params = [peerGroup, from, to];
+    const allIds = [...peerGroup, establishmentId];
+    const params = [allIds.join(','), from.toISOString(), to.toISOString()];
     const rows = await this.dataSource.query(query, params);
 
     // Filter out null values and exclude self if present
     const values: number[] = rows
-      .filter((row: RawPeerRow) => row.value !== null && row.value !== 0)
-      .filter((row: RawPeerRow) => row.establishment_id !== establishmentId)
-      .map((row: RawPeerRow) => row.value);
+      .filter((row: RawPeerRow) => row.value !== null && row.value !== 0 && row.value !== '0')
+      .filter((row: RawPeerRow) => row.establishmentId !== establishmentId)
+      .map((row: RawPeerRow) => Number(row.value));
 
     if (values.length < this.config.K_MIN) {
       throw new Error('Peer group too small after filtering');
@@ -237,7 +238,7 @@ export class BenchmarkService {
     const p75 = sorted[Math.floor(sorted.length * 0.75)];
 
     // Calculate relative position
-    const establishmentValue = rows.find((row: RawPeerRow) => row.establishment_id === establishmentId)?.value;
+    const establishmentValue = rows.find((row: RawPeerRow) => row.establishmentId === establishmentId)?.value;
     const relativePosition = establishmentValue
       ? ((establishmentValue - median) / median) * 100
       : 0;

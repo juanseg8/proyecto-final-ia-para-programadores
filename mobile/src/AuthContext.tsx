@@ -5,6 +5,7 @@ import { apiClient, setOnLogoutCallback } from './apiClient';
 interface User {
     id: number;
     email: string;
+    name?: string;
 }
 
 interface AuthContextType {
@@ -64,6 +65,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     
     const logout = async () => {
+        try {
+            await apiClient.post('/auth/logout');
+        } catch (e) {
+            console.log('Error during backend logout', e);
+        }
         await SecureStore.deleteItemAsync('accessToken');
         await SecureStore.deleteItemAsync('refreshToken');
         delete apiClient.defaults.headers.common['Authorization'];

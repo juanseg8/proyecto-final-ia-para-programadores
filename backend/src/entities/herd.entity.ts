@@ -18,6 +18,9 @@ export class Herd {
   @Column({ default: true })
   active!: boolean;
 
+  @Column({ nullable: true })
+  notes!: string;
+
   @ManyToOne(() => Establishment, { nullable: false })
   @JoinColumn({ name: 'establishmentId' })
   establishment!: Establishment;

@@ -1,22 +1,11 @@
 {
   "mcpServers": {
-    "postgres": {
-      "command": "npx",
+    "local-expo": {
+      "command": "cmd.exe",
       "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgresql://postgres:postgres_password@localhost:5432/agro_db"
+        "/c",
+        "npx expo-mcp --dev-server-url http://localhost:8081"
       ]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ]
-    },
-    "github": {
-      "serverUrl": "https://api.githubcopilot.com/mcp/"
     }
   }
 }

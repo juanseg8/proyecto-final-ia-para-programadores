@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, IsNull, Not } from 'typeorm';
+import { Repository, Between, IsNull, Not, In } from 'typeorm';
 import { Establishment } from '../entities/establishment.entity';
 import { Herd } from '../entities/herd.entity';
 import { Animal } from '../entities/animal.entity';
@@ -74,6 +74,12 @@ export class IndicatorsService {
     // Calculate cost per kg produced
     const costPerKgProduced = await this.calculateCostPerKgProduced(establishmentId, from, to, herdId);
 
+    // Calculate pregnancy percentage
+    const pregnancyPct = await this.calculatePregnancyPct(establishmentId, from, to, herdId);
+
+    // Calculate weaning percentage
+    const weaningPct = await this.calculateWeaningPct(establishmentId, from, to, herdId);
+
     // Create snapshot
     const snapshot = this.snapshotRepository.create({
       establishmentId,
@@ -85,6 +91,8 @@ export class IndicatorsService {
       stockingRateHeadsHa,
       mortalityPct,
       costPerKgProduced,
+      pregnancyPct,
+      weaningPct,
       calculatedAt: new Date(),
     });
 
@@ -248,7 +256,7 @@ export class IndicatorsService {
     // Find FEEDING and HEALTH events in the period
     const feedingHealthWhere: any = {
       establishmentId,
-      type: ['FEEDING', 'HEALTH'],
+      type: In(['FEEDING', 'HEALTH']),
       occurredAt: Between(from, to),
     };
 
@@ -310,5 +318,67 @@ export class IndicatorsService {
 
     const costPerKg = totalCost / totalWeightGainKg;
     return Number(costPerKg.toFixed(2));
+  }
+
+  private async calculatePregnancyPct(
+    establishmentId: string,
+    from: Date,
+    to: Date,
+    herdId: string | null = null,
+  ): Promise<number | null> {
+    const whereEvent: any = {
+      establishmentId,
+      type: 'PREGNANCY',
+      occurredAt: Between(from, to),
+    };
+    if (herdId) whereEvent.herdId = herdId;
+
+    const pregnancyEvents = await this.livestockEventRepository.count({ where: whereEvent });
+
+    const whereFemale: any = {
+      establishmentId,
+      sex: 'F',
+      status: 'ACTIVE',
+    };
+    if (herdId) whereFemale.herdId = herdId;
+    
+    const allFemales = await this.animalRepository.count({ where: whereFemale });
+    const eligibleFemales = Math.max(1, allFemales);
+
+    if (allFemales === 0 && pregnancyEvents === 0) return null;
+    
+    const pct = (pregnancyEvents / eligibleFemales) * 100;
+    return Number(Math.min(100, pct).toFixed(1));
+  }
+
+  private async calculateWeaningPct(
+    establishmentId: string,
+    from: Date,
+    to: Date,
+    herdId: string | null = null,
+  ): Promise<number | null> {
+    const whereEvent: any = {
+      establishmentId,
+      type: 'WEANING',
+      occurredAt: Between(from, to),
+    };
+    if (herdId) whereEvent.herdId = herdId;
+
+    const weaningEvents = await this.livestockEventRepository.count({ where: whereEvent });
+
+    const whereFemale: any = {
+      establishmentId,
+      sex: 'F',
+      status: 'ACTIVE',
+    };
+    if (herdId) whereFemale.herdId = herdId;
+    
+    const allFemales = await this.animalRepository.count({ where: whereFemale });
+    const eligibleFemales = Math.max(1, allFemales);
+
+    if (allFemales === 0 && weaningEvents === 0) return null;
+    
+    const pct = (weaningEvents / eligibleFemales) * 100;
+    return Number(Math.min(100, pct).toFixed(1));
   }
 }

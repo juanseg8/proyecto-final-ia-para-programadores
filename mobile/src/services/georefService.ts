@@ -3,11 +3,13 @@ import axios from 'axios';
 export interface Province {
   id: string;
   nombre: string;
+  centroide?: { lat: number; lon: number };
 }
 
 export interface Locality {
   id: string;
   nombre: string;
+  centroide?: { lat: number; lon: number };
 }
 
 export const georefService = {

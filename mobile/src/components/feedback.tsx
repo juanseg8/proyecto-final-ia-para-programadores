@@ -7,13 +7,13 @@ const Feedback = ({ type, message }: { type: 'success' | 'error' | 'info'; messa
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return theme.colors.success;
+        return theme.colors.semantic.success;
       case 'error':
-        return theme.colors.error;
+        return theme.colors.semantic.error;
       case 'info':
-        return theme.colors.info;
+        return theme.colors.semantic.info;
       default:
-        return theme.colors.info;
+        return theme.colors.semantic.info;
     }
   };
 

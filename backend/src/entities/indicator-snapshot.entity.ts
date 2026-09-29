@@ -10,7 +10,7 @@ export class IndicatorSnapshot {
   @Column()
   establishmentId!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   herdId!: string | null;
 
   @Column()
@@ -33,6 +33,12 @@ export class IndicatorSnapshot {
 
   @Column({ type: 'decimal', nullable: true })
   costPerKgProduced!: number | null;
+
+  @Column({ type: 'decimal', nullable: true })
+  pregnancyPct!: number | null;
+
+  @Column({ type: 'decimal', nullable: true })
+  weaningPct!: number | null;
 
   @Column()
   calculatedAt!: Date;

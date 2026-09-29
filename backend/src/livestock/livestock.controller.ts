@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 
 import { EstablishmentOwnershipGuard } from '../establishments/guards/establishment-ownership.guard';
@@ -75,8 +76,9 @@ export class LivestockController {
   @Get('animals')
   async findAnimals(
     @Param('establishmentId') establishmentId: string,
+    @Query('herdId') herdId?: string,
   ) {
-    return this.livestockService.findAnimals(establishmentId);
+    return this.livestockService.findAnimals(establishmentId, herdId);
   }
 
   @Post('animals')
@@ -111,8 +113,9 @@ export class LivestockController {
   @Get('weighings')
   async findWeighings(
     @Param('establishmentId') establishmentId: string,
+    @Query('animalId') animalId?: string,
   ) {
-    return this.livestockService.findWeighings(establishmentId);
+    return this.livestockService.findWeighings(establishmentId, animalId);
   }
 
   @Post('weighings')
@@ -130,8 +133,9 @@ export class LivestockController {
   @Get('events')
   async findLivestockEvents(
     @Param('establishmentId') establishmentId: string,
+    @Query('animalId') animalId?: string,
   ) {
-    return this.livestockService.findLivestockEvents(establishmentId);
+    return this.livestockService.findLivestockEvents(establishmentId, animalId);
   }
 
   @Post('events')

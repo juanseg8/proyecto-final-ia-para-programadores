@@ -29,4 +29,12 @@ export class UpdateEstablishmentDto {
   @IsOptional()
   @IsString()
   locality?: string;
+
+  @IsOptional()
+  @IsString()
+  activity?: string;
+
+  @IsOptional()
+  @IsString()
+  productionSystem?: string;
 }

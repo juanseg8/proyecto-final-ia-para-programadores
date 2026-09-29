@@ -23,4 +23,10 @@ export class CreateEstablishmentDto {
 
   @IsString()
   locality!: string;
+
+  @IsString()
+  activity!: string;
+
+  @IsString()
+  productionSystem!: string;
 }

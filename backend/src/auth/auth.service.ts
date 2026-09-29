@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity';
 import { Session } from '../entities/session.entity';
 import { RegisterDto, LoginDto, RefreshDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { PasswordResetToken } from '../entities/password-reset-token.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     @InjectRepository(Session) private readonly sessionRepo: Repository<Session>,
     @InjectRepository(PasswordResetToken) private readonly resetTokenRepo: Repository<PasswordResetToken>,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   private hashSHA256(data: string): string {
@@ -59,7 +61,7 @@ export class AuthService {
 
     const refreshToken = this.jwtService.sign(
       { sub: user.id, sid, jti: crypto.randomUUID() },
-      { expiresIn: '30d', secret: process.env.RT_SECRET || 'rt_secret' }
+      { expiresIn: '30d', secret: this.configService.get<string>('RT_SECRET') }
     );
 
     const refreshTokenHash = this.hashSHA256(refreshToken);
@@ -83,7 +85,7 @@ export class AuthService {
 
   async refresh(dto: RefreshDto) {
     try {
-      const decoded = this.jwtService.verify(dto.refreshToken, { secret: process.env.RT_SECRET || 'rt_secret' });
+      const decoded = this.jwtService.verify(dto.refreshToken, { secret: this.configService.get<string>('RT_SECRET') });
       const session = await this.sessionRepo.findOne({ where: { id: decoded.sid, userId: decoded.sub } });
 
       if (!session || session.revokedAt || session.expiresAt < new Date()) {
@@ -97,10 +99,13 @@ export class AuthService {
       }
 
       // Rotación
-      const accessToken = this.jwtService.sign({ sub: session.userId, sid: session.id }, { expiresIn: '15m' });
+      const accessToken = this.jwtService.sign(
+        { sub: session.userId, sid: session.id }, 
+        { expiresIn: '15m' }
+      );
       const newRefreshToken = this.jwtService.sign(
         { sub: session.userId, sid: session.id, jti: crypto.randomUUID() },
-        { expiresIn: '30d', secret: process.env.RT_SECRET || 'rt_secret' }
+        { expiresIn: '30d', secret: this.configService.get<string>('RT_SECRET') }
       );
 
       session.refreshTokenHash = this.hashSHA256(newRefreshToken);

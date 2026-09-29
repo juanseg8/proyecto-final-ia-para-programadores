@@ -1,9 +1,8 @@
-// entire file content ...
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput, ScrollView } from 'react-native';
 import { theme } from '../theme/theme';
-import { AppInput } from './AppInput';
 import { AppButton } from './AppButton';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface SearchableSelectProps<T> {
   label: string;
@@ -18,6 +17,7 @@ interface SearchableSelectProps<T> {
   placeholder: string;
   searchable?: boolean;
   emptyMessage?: string;
+  leftIcon?: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
 export const SearchableSelect = <T,>({
@@ -33,6 +33,7 @@ export const SearchableSelect = <T,>({
   placeholder,
   searchable = true,
   emptyMessage = 'No hay opciones disponibles',
+  leftIcon,
 }: SearchableSelectProps<T>) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -51,88 +52,69 @@ export const SearchableSelect = <T,>({
 
   const handleSelect = (item: T) => {
     onSelect(item);
+    setSearchText(getLabel(item));
     setModalVisible(false);
+  };
+
+  const handleFocus = () => {
+    if (!disabled) {
+      setModalVisible(true);
+      if (selectedItem) setSearchText(getLabel(selectedItem));
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity
-        style={styles.inputContainer}
-        onPress={() => !disabled && setModalVisible(true)}
-        disabled={disabled}
-        activeOpacity={0.7}
-      >
-        <AppInput
-          placeholder={placeholder}
-          value={selectedItem ? getLabel(selectedItem) : ''}
-          editable={false}
-          pointerEvents="none"
-          style={styles.input}
-        />
-      </TouchableOpacity>
-
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          {onRetry && (
-            <AppButton
-              title="Reintentar"
-              onPress={onRetry}
-              style={styles.retryButton}
-            />
-          )}
-        </View>
-      )}
-
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{label}</Text>
-            <AppButton
-              title="Cerrar"
-              onPress={() => setModalVisible(false)}
-              style={styles.closeButton}
-            />
+      <View style={styles.inputWrapper}>
+        {leftIcon && (
+          <View style={{ paddingLeft: 12, justifyContent: 'center' }}>
+            <MaterialCommunityIcons name={leftIcon} size={24} color={theme.colors.neutral[500]} />
           </View>
+        )}
+        <TextInput
+          style={[styles.input, disabled && styles.inputDisabled]}
+          placeholder={placeholder}
+          value={modalVisible ? searchText : (selectedItem ? getLabel(selectedItem) : '')}
+          onChangeText={(text) => {
+            setSearchText(text);
+            if (!modalVisible) setModalVisible(true);
+          }}
+          onFocus={handleFocus}
+          editable={!disabled && searchable}
+          placeholderTextColor={theme.colors.textSecondary}
+        />
+        <TouchableOpacity 
+          style={styles.iconContainer} 
+          onPress={() => {
+            if (!disabled) {
+              setModalVisible(!modalVisible);
+            }
+          }}
+        >
+          <Ionicons name={modalVisible ? "chevron-up" : "chevron-down"} size={20} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
 
+      {modalVisible && (
+        <ScrollView style={styles.dropdownContainer} nestedScrollEnabled={true}>
           {loading ? (
-            <ActivityIndicator size="large" style={styles.loader} />
+            <ActivityIndicator size="small" style={{padding: 16}} color={theme.colors.primary[600]} />
+          ) : filteredItems.length === 0 ? (
+            <Text style={styles.emptyText}>{emptyMessage}</Text>
           ) : (
-            <>
-              {searchable && (
-                <AppInput
-                  placeholder="Buscar..."
-                  value={searchText}
-                  onChangeText={setSearchText}
-                  style={styles.searchInput}
-                />
-              )}
-
-              <ScrollView style={styles.listContainer}>
-                {filteredItems.length === 0 ? (
-                  <Text style={styles.emptyText}>{emptyMessage}</Text>
-                ) : (
-                  filteredItems.map((item, index) => (
-                    <TouchableOpacity
-                      key={`${getLabel(item)}-${index}`}
-                      style={styles.item}
-                      onPress={() => handleSelect(item)}
-                    >
-                      <Text style={styles.itemText}>{getLabel(item)}</Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            </>
+            filteredItems.map((item, index) => (
+              <TouchableOpacity
+                key={`${getLabel(item)}-${index}`}
+                style={styles.item}
+                onPress={() => handleSelect(item)}
+              >
+                <Text style={styles.itemText}>{getLabel(item)}</Text>
+              </TouchableOpacity>
+            ))
           )}
-        </View>
-      </Modal>
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -146,61 +128,41 @@ const styles = StyleSheet.create({
     ...theme.typography.label,
     marginBottom: theme.spacing[8],
   },
-  inputContainer: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.input,
     backgroundColor: theme.colors.surface,
   },
   input: {
+    flex: 1,
     paddingHorizontal: theme.spacing[16],
     paddingVertical: theme.spacing[12],
+    fontSize: theme.typography.body.fontSize,
+    color: theme.colors.textPrimary,
   },
-  errorContainer: {
-    marginTop: theme.spacing[8],
+  inputDisabled: {
+    backgroundColor: '#F5F7F5',
+    color: theme.colors.textSecondary,
   },
-  errorText: {
-    color: theme.colors.error,
-    ...theme.typography.caption,
-    marginBottom: theme.spacing[4],
+  iconContainer: {
+    padding: 12,
   },
-  retryButton: {
-    marginTop: theme.spacing[8],
-  },
-  modalContainer: {
-    flex: 1,
-    paddingTop: theme.spacing[24],
+  dropdownContainer: {
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.input,
     backgroundColor: theme.colors.surface,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing[16],
-    marginBottom: theme.spacing[16],
-  },
-  modalTitle: {
-    ...theme.typography.h3,
-    color: theme.colors.forest,
-  },
-  closeButton: {
-    minWidth: 80,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  searchInput: {
-    marginHorizontal: theme.spacing[16],
-    marginBottom: theme.spacing[16],
-  },
-  listContainer: {
-    flex: 1,
+    maxHeight: 200,
+    overflow: 'hidden',
   },
   item: {
-    padding: theme.spacing[16],
+    padding: theme.spacing[12],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#F5F7F5',
   },
   itemText: {
     ...theme.typography.body,

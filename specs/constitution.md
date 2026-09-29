@@ -104,6 +104,24 @@ contexto enviado, modelo y resultado del guardrail. También las rechazadas.
 
 ---
 
+## INV-11 · El prompt del sistema de IA es inmutable por el usuario
+
+Los prompts base del sistema de IA residen exclusivamente en código duro (`ai.service.ts`) o en base de datos sin API de edición para el usuario. El usuario puede enviar mensajes (contexto de usuario), pero nunca alterar las directivas `system`.
+
+**Verificación:** test que verifique la ausencia de inyección de parámetros system en la construcción de los mensajes de OpenAI.
+**Test:** `test/ai/immutable-prompt.spec.ts`
+
+---
+
+## INV-12 · Única herramienta de IA: Antigravity
+
+El repositorio debe permanecer limpio de configuraciones de agentes locales, runtimes externos (Aider, OpenCode) o scripts complejos de orquestación nocturna (`.agents`). Todo el trabajo generativo, refactor y desarrollo asíncrono debe realizarse exclusivamente a través de Antigravity.
+
+**Verificación:** revisión de directorios raíz asegurando la inexistencia de `.aider.chat.history.md`, `.opencode`, u otras configuraciones.
+**Test:** `N/A (Revisión humana y de limpieza estructural).`
+
+---
+
 ## INV-09 · Los umbrales son configuración, no código
 
 Los umbrales de alerta (BEN-01/02/03/04, HIS-01/02/03, EST-01/02) y el valor de k viven en

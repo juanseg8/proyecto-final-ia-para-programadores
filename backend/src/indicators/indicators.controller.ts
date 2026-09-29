@@ -18,11 +18,14 @@ export class IndicatorsController {
   ) {
     // Validate date format and convert to Date objects
     const fromDate = new Date(from);
-    const toDate = new Date(to);
+    let toDate = new Date(to);
 
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
       throw new Error('Formato de fecha inválido. Use YYYY-MM-DD');
     }
+
+    // Set toDate to the end of the day to include all events on that day
+    toDate.setUTCHours(23, 59, 59, 999);
 
     // Parse herdId to null if not provided
     const parsedHerdId = herdId === '' ? null : herdId;

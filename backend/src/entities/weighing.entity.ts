@@ -14,7 +14,7 @@ export class Weighing {
   @Column({ type: 'decimal' })
   weightKg!: number;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   notes!: string | null;
 
   @ManyToOne(() => Establishment, { nullable: false })

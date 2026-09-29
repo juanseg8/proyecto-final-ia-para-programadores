@@ -1,146 +1,198 @@
-// entire file content ...
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { AppScreen, AppHeader, AppButton, AppInput, AppCard, Feedback } from '../components';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Text } from 'react-native';
+import { AppScreen, AppHeader, AppButton, AppInput, SearchableSelect } from '../components';
 import { apiClient } from '../apiClient';
-import theme from '../theme/theme';
+import { theme } from '../theme/theme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+const EVENT_OPTIONS = [
+  { label: 'Movimiento', value: 'MOVEMENT' },
+  { label: 'Sanidad', value: 'HEALTH' },
+  { label: 'Alimentación', value: 'FEEDING' },
+  { label: 'Preñez', value: 'PREGNANCY' },
+  { label: 'Destete', value: 'WEANING' },
+  { label: 'Compra', value: 'PURCHASE' },
+  { label: 'Venta', value: 'SALE' },
+  { label: 'Muerte', value: 'DEATH' },
+  { label: 'Costo', value: 'COST' },
+  { label: 'Otro', value: 'OTHER' },
+];
 
 const RegisterLivestockEventScreen = ({ route, navigation }: { route: any; navigation: any }) => {
-  const [event, setEvent] = useState({
-    type: 'MOVEMENT',
-    occurredAt: '',
-    animalCount: '',
-    amount: '',
-    notes: '',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
+  const [eventType, setEventType] = useState<any>(null);
+  const [date, setDate] = useState(new Date().toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit', year: 'numeric'}));
+  const [description, setDescription] = useState('');
+  
+  const [animals, setAnimals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const establishmentId = route.params?.establishmentId;
   const herdId = route.params?.herdId;
-  const animalId = route.params?.animalId;
+  const animalIdFromRoute = route.params?.animalId;
 
-  const handleChange = (name: string, value: string) => {
-    setEvent(prev => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const handleSubmit = async () => {
-    if (!event.type || !event.occurredAt) {
-      setError('Tipo y fecha son obligatorios');
-      return;
-    }
-
+  const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
-
-      const payload: any = {
-        type: event.type,
-        occurredAt: event.occurredAt,
-        establishmentId,
-        herdId: herdId || undefined,
-        animalId: animalId || undefined,
-      };
-
-      if (event.animalCount) payload.animalCount = parseInt(event.animalCount);
-      if (event.amount) payload.amount = parseFloat(event.amount);
-      if (event.notes) payload.notes = event.notes;
-
-      await apiClient.post(`/establishments/${establishmentId}/events`, payload);
-
-      setSuccess('Evento registrado correctamente');
-      setEvent({
-        type: 'MOVEMENT',
-        occurredAt: '',
-        animalCount: '',
-        amount: '',
-        notes: '',
-      });
-    } catch (err) {
-      setError('Error al registrar el evento');
-      console.error(err);
+      const res = await apiClient.get(`/establishments/${establishmentId}/animals`);
+      const filteredAnimals = res.data.filter((a: any) => a.herdId === herdId);
+      setAnimals(filteredAnimals);
+      if (animalIdFromRoute) {
+        const found = filteredAnimals.find((a: any) => a.id === animalIdFromRoute);
+        if (found) setSelectedAnimal(found);
+      }
+    } catch (e) {
+      console.log('Error loading data', e);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSubmit = async () => {
+    if (!selectedAnimal || !eventType) {
+      Alert.alert('Error', 'Seleccione un animal y el tipo de evento');
+      return;
+    }
+    try {
+      let parsedDate = new Date();
+      if (date && date.includes('/')) {
+        const [day, month, year] = date.split('/');
+        parsedDate = new Date(Number(year), Number(month) - 1, Number(day));
+      }
+
+      await apiClient.post(`/establishments/${establishmentId}/events`, {
+        herdId,
+        animalId: selectedAnimal.id,
+        type: eventType.value,
+        notes: description,
+        occurredAt: parsedDate.toISOString(),
+      });
+      Alert.alert('Éxito', 'Evento registrado correctamente');
+      navigation.goBack();
+    } catch (err: any) {
+      console.log(err.response?.data || err);
+      Alert.alert('Error', 'No se pudo registrar el evento');
+    }
+  };
+
   return (
-    <AppScreen>
-      <AppHeader title="Registrar Evento" />
-      <ScrollView style={styles.container}>
-        {error && <Feedback type="error" message={error} />}
-        {success && <Feedback type="success" message={success} />}
+    <AppScreen style={styles.screen}>
+      <AppHeader title="Registrar Evento" showBack={true} />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {loading ? (
+             <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+          ) : (
+            <View style={styles.formContainer}>
+              {animalIdFromRoute ? (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 }}>Animal seleccionado</Text>
+                  <View style={styles.animalRow}>
+                    <View style={styles.animalIcon}>
+                      <MaterialCommunityIcons name="cow" size={20} color={theme.colors.primary[600]} />
+                    </View>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.colors.textPrimary }}>{selectedAnimal?.tag}</Text>
+                  </View>
+                </View>
+              ) : (
+                <SearchableSelect
+                  label="Seleccione Animal (Caravana)"
+                  items={animals}
+                  selectedItem={selectedAnimal}
+                  onSelect={setSelectedAnimal}
+                  getLabel={(i) => i.tag}
+                  placeholder="Buscar caravana..."
+                />
+              )}
 
-        <AppCard title="Datos del Evento">
-          <AppInput
-            label="Tipo"
-            value={event.type}
-            onChangeText={(text) => handleChange('type', text)}
-            placeholder="MOVEMENT, HEALTH, FEEDING, PURCHASE, SALE, DEATH, COST, OTHER"
-          />
-          <AppInput
-            label="Fecha"
-            value={event.occurredAt}
-            onChangeText={(text) => handleChange('occurredAt', text)}
-            placeholder="YYYY-MM-DD"
-          />
-          <AppInput
-            label="Cantidad de Animales"
-            value={event.animalCount}
-            onChangeText={(text) => handleChange('animalCount', text)}
-            placeholder="Cantidad (opcional)"
-            keyboardType="numeric"
-          />
-          <AppInput
-            label="Monto (ARS)"
-            value={event.amount}
-            onChangeText={(text) => handleChange('amount', text)}
-            placeholder="Monto (opcional)"
-            keyboardType="numeric"
-          />
-          <AppInput
-            label="Notas"
-            value={event.notes}
-            onChangeText={(text) => handleChange('notes', text)}
-            placeholder="Notas adicionales (opcional)"
-            multiline
-          />
-        </AppCard>
+              <SearchableSelect
+                label="Tipo de Evento *"
+                items={EVENT_OPTIONS}
+                selectedItem={eventType}
+                onSelect={setEventType}
+                getLabel={(i) => i.label}
+                placeholder="Seleccione evento"
+                searchable={false}
+                leftIcon="tag"
+              />
 
-        <View style={styles.buttonContainer}>
-          <AppButton
-            title="Registrar Evento"
-            onPress={handleSubmit}
-            disabled={loading}
-            style={styles.button}
-          />
-          <AppButton
-            title="Cancelar"
-            onPress={() => navigation.goBack()}
-            style={styles.button}
-          />
+              <AppInput
+                label="Fecha *"
+                value={date}
+                onChangeText={setDate}
+                placeholder="DD/MM/YYYY"
+                leftIcon="calendar"
+              />
+
+              <AppInput
+                label="Observaciones / Detalle *"
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Detalles del evento..."
+                multiline={true}
+                leftIcon="file-document-outline"
+              />
+            </View>
+          )}
+        </ScrollView>
+        <View style={styles.footer}>
+          <AppButton title="Guardar Evento" onPress={handleSubmit} />
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </AppScreen>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flex: 1,
-    padding: theme.spacing[16],
   },
-  buttonContainer: {
+  scrollContent: {
+    padding: 24,
+  },
+  formContainer: {
+    backgroundColor: theme.colors.surface,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  animalRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: theme.spacing[24],
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  button: {
-    flex: 1,
-    marginHorizontal: theme.spacing[8],
+  animalIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E6EBE5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
+  footer: {
+    padding: 24,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  }
 });
 
 export default RegisterLivestockEventScreen;

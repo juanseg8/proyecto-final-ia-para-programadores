@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Add Livestock Event Workflow",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "happy-path",
+        "label": "Save Event",
+        "focus": ["user", "mobile", "api", "db", "success"],
+        "note": "Standard successful flow for adding an event."
+      },
+      {
+        "id": "ai-audit",
+        "label": "AI Audit",
+        "focus": ["api", "ai_audit", "flagged"],
+        "note": "Background audit for livestock anomalies."
+      }
+    ],
+    "output": "workflow.html"
+  },
+  "lanes": [
+    { "id": "ui", "label": "User App" },
+    { "id": "backend", "label": "API Services" },
+    { "id": "audit", "label": "AI Audit", "variant": "exception" },
+    { "id": "data", "label": "Database" }
+  ],
+  "phases": [
+    { "id": "input", "label": "Input", "fromCol": 0, "toCol": 1 },
+    { "id": "process", "label": "Process", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "storage", "label": "Store", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [],
+  "mainPath": ["user", "mobile", "api", "db", "success"],
+  "nodes": [
+    { "id": "user", "lane": "ui", "col": 0, "type": "external", "label": "Farmer", "sublabel": "enters data", "width": 132 },
+    { "id": "mobile", "lane": "ui", "col": 1, "type": "frontend", "label": "Livestock Screen", "sublabel": "React Native", "width": 132 },
+    { "id": "api", "lane": "backend", "col": 2, "type": "backend", "label": "Livestock API", "sublabel": "NestJS", "width": 132 },
+    { "id": "ai_audit", "lane": "audit", "col": 3, "type": "backend", "label": "AI Audit Module", "sublabel": "anomaly check", "width": 132 },
+    { "id": "flagged", "lane": "audit", "col": 4, "type": "security", "label": "Flag Issue", "sublabel": "Alert generated", "width": 132 },
+    { "id": "db", "lane": "data", "col": 4, "type": "database", "label": "PostgreSQL", "sublabel": "save event", "width": 132 },
+    { "id": "success", "lane": "ui", "col": 5, "type": "backend", "label": "UI Success", "sublabel": "Event Saved", "width": 132 }
+  ],
+  "edges": [
+    { "id": "submit-event", "from": "user", "to": "mobile", "variant": "default" },
+    { "id": "api-call", "from": "mobile", "to": "api", "label": "POST /events", "variant": "emphasis" },
+    { "id": "save-db", "from": "api", "to": "db", "label": "insert record", "variant": "default" },
+    { "id": "run-audit", "from": "api", "to": "ai_audit", "label": "async audit", "variant": "dashed" },
+    { "id": "flag-anomaly", "from": "ai_audit", "to": "flagged", "label": "anomaly found", "variant": "security", "role": "error" },
+    { "id": "return-success", "from": "db", "to": "success", "variant": "emphasis", "role": "return", "fromSide": "bottom", "toSide": "bottom", "route": "bottom-channel", "labelSegment": 1 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Add Event",
+      "items": [
+        "Farmer inputs weight or health update.",
+        "API saves to Postgres and responds fast."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "AI Audit",
+      "items": [
+        "An async AI job audits the event for anomalies (e.g. impossible weight).",
+        "If anomalous, an alert is flagged."
+      ]
+    }
+  ]
+}

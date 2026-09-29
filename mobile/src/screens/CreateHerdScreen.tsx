@@ -1,110 +1,167 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text, TouchableOpacity } from 'react-native';
 import { AppScreen, AppHeader, AppButton, AppInput } from '../components';
+import { SearchableSelect } from '../components/SearchableSelect';
 import { apiClient } from '../apiClient';
-import theme from '../theme/theme';
+import { theme } from '../theme/theme';
+import { Ionicons } from '@expo/vector-icons';
+
+const ACTIVITY_OPTIONS = [
+  { id: 'CRIA', label: 'Cría' },
+  { id: 'RECRIA', label: 'Recría' },
+  { id: 'ENGORDE', label: 'Engorde' }
+];
+
+const SYSTEM_OPTIONS = [
+  { id: 'PASTOREO', label: 'Pastoreo' },
+  { id: 'SEMI_INTENSIVO', label: 'Semi-Intensivo' },
+  { id: 'INTENSIVO', label: 'Intensivo' }
+];
 
 const CreateHerdScreen = ({ route, navigation }: { route: any; navigation: any }) => {
   const [name, setName] = useState('');
-  const [activity, setActivity] = useState('');
-  const [productionSystem, setProductionSystem] = useState('');
+  const [activity, setActivity] = useState<any>(null);
+  const [productionSystem, setProductionSystem] = useState<any>(null);
   const [active, setActive] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const [notes, setNotes] = useState('');
+  
   const establishmentId = route.params?.establishmentId;
 
   const handleSubmit = async () => {
-    if (!name || !activity || !productionSystem) {
-      setError('Todos los campos son obligatorios');
-      return;
-    }
-
     try {
-      setLoading(true);
       await apiClient.post(`/establishments/${establishmentId}/herds`, {
         name,
-        activity,
-        productionSystem,
+        activity: activity?.id,
+        productionSystem: productionSystem?.id,
         active,
+        notes,
       });
       navigation.goBack();
     } catch (err) {
-      setError('Error al crear el rodeo');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.log(err);
     }
   };
 
   return (
-    <AppScreen>
-      <AppHeader title="Crear Rodeo" />
-      <ScrollView style={styles.container}>
-        {error && <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text>}
-        <AppInput
-          label="Nombre del Rodeo"
-          value={name}
-          onChangeText={setName}
-          placeholder="Ej: Rodeo Principal"
-        />
-        <AppInput
-          label="Actividad"
-          value={activity}
-          onChangeText={setActivity}
-          placeholder="CRIA | RECRIA | ENGORDE"
-        />
-        <AppInput
-          label="Sistema de Producción"
-          value={productionSystem}
-          onChangeText={setProductionSystem}
-          placeholder="PASTOREO | SEMI_INTENSIVO | INTENSIVO"
-        />
-        <View style={styles.checkboxContainer}>
-          <Text style={[styles.label, { color: theme.colors.textPrimary }]}>Estado Activo</Text>
-          <AppButton
-            title={active ? 'Activo' : 'Inactivo'}
-            onPress={() => setActive(!active)}
-            style={styles.checkboxButton}
-          />
+    <AppScreen style={styles.screen}>
+      <AppHeader title="Nuevo Rodeo" showBack={true} />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          
+          <View style={styles.formContainer}>
+            <AppInput
+              label="Nombre del Rodeo"
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej: Lote 1 - Invernada"
+              leftIcon="tag-text-outline"
+            />
+            <SearchableSelect
+              label="Actividad"
+              items={ACTIVITY_OPTIONS}
+              selectedItem={activity}
+              onSelect={setActivity}
+              getLabel={(item) => item.label}
+              placeholder="Seleccioná una actividad"
+              searchable={false}
+              leftIcon="clipboard-list-outline"
+            />
+            <SearchableSelect
+              label="Sistema de Producción"
+              items={SYSTEM_OPTIONS}
+              selectedItem={productionSystem}
+              onSelect={setProductionSystem}
+              getLabel={(item) => item.label}
+              placeholder="Seleccioná el sistema"
+              searchable={false}
+              leftIcon="sprout-outline"
+            />
+            
+            <AppInput
+              label="Notas (Opcional)"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Ej: Lote de recría alimentado a pasto"
+              multiline
+              numberOfLines={3}
+              leftIcon="note-text-outline"
+            />
+            
+            <Text style={styles.label}>Estado del Rodeo</Text>
+            <TouchableOpacity 
+              style={styles.toggleBtn}
+              onPress={() => setActive(!active)}
+            >
+              <View style={[styles.toggleIndicator, { backgroundColor: active ? theme.colors.primary[600] : theme.colors.textSecondary }]} />
+              <Text style={styles.toggleText}>{active ? 'Activo (En Producción)' : 'Inactivo (Cerrado)'}</Text>
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+        <View style={styles.footer}>
+          <AppButton title="Crear Rodeo" onPress={handleSubmit} />
         </View>
-        <AppButton
-          title="Crear Rodeo"
-          onPress={handleSubmit}
-          disabled={loading}
-          style={styles.submitButton}
-        />
-      </ScrollView>
+      </KeyboardAvoidingView>
     </AppScreen>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flex: 1,
-    padding: theme.spacing[16],
   },
-  error: {
-    fontSize: theme.typography.body.fontSize,
-    marginBottom: theme.spacing[16],
-    textAlign: 'center',
+  scrollContent: {
+    padding: 24,
+  },
+  formContainer: {
+    backgroundColor: theme.colors.surface,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   label: {
     fontSize: theme.typography.label.fontSize,
-    marginBottom: theme.spacing[8],
+    fontWeight: theme.typography.label.fontWeight,
+    color: theme.colors.textPrimary,
+    marginBottom: 12,
+    marginTop: 8,
   },
-  checkboxContainer: {
+  toggleBtn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing[16],
+    padding: 12,
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  checkboxButton: {
-    minWidth: 100,
+  toggleIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
   },
-  submitButton: {
-    marginTop: theme.spacing[24],
+  toggleText: {
+    fontSize: 14,
+    color: theme.colors.textPrimary,
+    fontWeight: '500',
   },
+  footer: {
+    padding: 24,
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  }
 });
 
 export default CreateHerdScreen;

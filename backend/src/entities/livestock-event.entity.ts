@@ -8,19 +8,19 @@ export class LivestockEvent {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
-  type!: 'MOVEMENT' | 'HEALTH' | 'FEEDING' | 'PURCHASE' | 'SALE' | 'DEATH' | 'COST' | 'OTHER';
+  @Column({ type: 'varchar' })
+  type!: 'MOVEMENT' | 'HEALTH' | 'FEEDING' | 'PURCHASE' | 'SALE' | 'DEATH' | 'COST' | 'OTHER' | 'PREGNANCY' | 'WEANING';
 
   @Column()
   occurredAt!: Date;
 
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   animalCount!: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'decimal', nullable: true })
   amount!: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   notes!: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
@@ -37,14 +37,14 @@ export class LivestockEvent {
   @JoinColumn({ name: 'herdId' })
   herd!: Herd | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   herdId!: string | null;
 
   @ManyToOne(() => Animal, { nullable: true })
   @JoinColumn({ name: 'animalId' })
   animal!: Animal | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   animalId!: string | null;
 
   @CreateDateColumn()

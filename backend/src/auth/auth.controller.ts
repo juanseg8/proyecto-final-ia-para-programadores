@@ -1,11 +1,17 @@
-import { Controller, Post, Body, Get, UseGuards, Req, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Req, HttpCode, NotFoundException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+  ) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -45,8 +51,15 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Req() req: any) {
-    // Retorna info básica (se completará con info real del repo User si es necesario)
-    return { userId: req.user.userId, sessionId: req.user.sid };
+  async getProfile(@Req() req: any) {
+    const user = await this.userRepo.findOne({ where: { id: req.user.userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return {
+      userId: user.id,
+      sessionId: req.user.sid,
+      email: user.email,
+      name: user.name,
+      createdAt: user.createdAt,
+    };
   }
 }

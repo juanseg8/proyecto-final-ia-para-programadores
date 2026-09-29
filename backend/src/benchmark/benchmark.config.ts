@@ -12,8 +12,8 @@ export interface BenchmarkConfig {
 }
 
 export function validateConfig(config: BenchmarkConfig): void {
-  if (config.K_MIN < 10) {
-    throw new Error('K_MIN must be at least 10');
+  if (config.K_MIN < 3) {
+    throw new Error('K_MIN must be at least 3');
   }
   if (config.scaleRanges.initial <= 0 || config.scaleRanges.relaxed <= 0) {
     throw new Error('Scale ranges must be positive');
@@ -24,10 +24,10 @@ export function validateConfig(config: BenchmarkConfig): void {
 }
 
 export const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
-  K_MIN: 10,
+  K_MIN: 5,
   scaleRanges: {
     initial: 0.3,
-    relaxed: 0.5,
+    relaxed: 0.8,
   },
   regions: {
     province: 'province',

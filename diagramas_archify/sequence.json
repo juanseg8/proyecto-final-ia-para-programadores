@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Authentication & Registration Sequence",
+    "output": "sequence.html",
+    "viewBox": [1080, 700],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "registration", "label": "User Registration", "focus": ["user", "mobile", "api", "db"], "note": "Flow when a user signs up." },
+      { "id": "authentication", "label": "Authentication", "focus": ["mobile", "api", "auth", "db"], "note": "Validating credentials and issuing JWT." }
+    ]
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "User", "sublabel": "Mobile App User" },
+    { "id": "mobile", "type": "frontend", "label": "React Native", "sublabel": "AuthContext" },
+    { "id": "api", "type": "backend", "label": "NestJS API", "sublabel": "Auth Controller" },
+    { "id": "auth", "type": "security", "label": "Auth Service", "sublabel": "JWT / Bcrypt" },
+    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "Users Table" }
+  ],
+  "segments": [
+    { "from": 150, "to": 320, "label": "Registration" },
+    { "from": 350, "to": 650, "label": "Authentication (Login)" }
+  ],
+  "messages": [
+    { "id": "register-action", "from": "user", "to": "mobile", "y": 170, "label": "Submit Register Form", "variant": "default" },
+    { "id": "post-register", "from": "mobile", "to": "api", "y": 200, "label": "POST /auth/register", "variant": "emphasis" },
+    { "id": "hash-pwd", "from": "api", "to": "auth", "y": 230, "label": "Hash Password", "variant": "security" },
+    { "id": "save-user", "from": "api", "to": "db", "y": 260, "label": "INSERT User", "variant": "default" },
+    { "id": "register-success", "from": "api", "to": "mobile", "y": 290, "label": "201 Created", "variant": "return" },
+    
+    { "id": "login-action", "from": "user", "to": "mobile", "y": 380, "label": "Submit Login Form", "variant": "default" },
+    { "id": "post-login", "from": "mobile", "to": "api", "y": 410, "label": "POST /auth/login", "variant": "emphasis" },
+    { "id": "find-user", "from": "api", "to": "db", "y": 440, "label": "SELECT User", "variant": "default" },
+    { "id": "db-user", "from": "db", "to": "api", "y": 470, "label": "User Record", "variant": "return" },
+    { "id": "compare-pwd", "from": "api", "to": "auth", "y": 500, "label": "Compare Hash", "variant": "security" },
+    { "id": "generate-jwt", "from": "api", "to": "auth", "y": 530, "label": "Sign JWT", "variant": "security" },
+    { "id": "login-success", "from": "api", "to": "mobile", "y": 560, "label": "200 OK { token }", "variant": "return" },
+    { "id": "update-state", "from": "mobile", "to": "user", "y": 590, "label": "Navigate to Home", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "mobile", "from": 165, "to": 300, "type": "frontend" },
+    { "participant": "api", "from": 195, "to": 300, "type": "backend" },
+    { "participant": "auth", "from": 225, "to": 240, "type": "security" },
+    { "participant": "db", "from": 255, "to": 270, "type": "database" },
+    
+    { "participant": "mobile", "from": 375, "to": 600, "type": "frontend" },
+    { "participant": "api", "from": 405, "to": 570, "type": "backend" },
+    { "participant": "db", "from": 435, "to": 480, "type": "database" },
+    { "participant": "auth", "from": 495, "to": 540, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Registration",
+      "items": [
+        "Passwords are hashed via bcrypt before saving to PostgreSQL."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Login",
+      "items": [
+        "Database is queried to find the user.",
+        "Password hash is compared.",
+        "A JWT is signed and returned to the React Native app."
+      ]
+    }
+  ]
+}

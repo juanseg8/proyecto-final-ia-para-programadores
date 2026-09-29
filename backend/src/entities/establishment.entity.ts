@@ -31,10 +31,10 @@ export class Establishment {
   @Column({ default: false })
   participatesInBenchmark!: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   activity!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   productionSystem!: string | null;
 
   @ManyToOne(() => User, { nullable: false })

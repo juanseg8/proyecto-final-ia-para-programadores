@@ -1,22 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { Establishment } from './establishment.entity';
 import { Herd } from './herd.entity';
 
 @Entity('animals')
+@Unique(['establishmentId', 'tag'])
 export class Animal {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ unique: true })
+  @Column()
   tag!: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   sex!: 'M' | 'F';
 
-  @Column({ nullable: true })
+  @Column({ type: 'date', nullable: true })
   birthDate!: Date | null;
 
-  @Column()
+  @Column({ type: 'varchar' })
   status!: 'ACTIVE' | 'SOLD' | 'DEAD' | 'TRANSFERRED';
 
   @ManyToOne(() => Establishment, { nullable: false })

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Agro SDD Kit Architecture",
+    "output": "architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "mobile-to-api", "label": "Mobile to API", "focus": ["mobile", "api", "db"], "note": "Primary request path from the React Native app to the NestJS API and Postgres DB." },
+      { "id": "ai-and-weather", "label": "External Integrations", "focus": ["api", "ai_service", "weather_api"], "note": "Backend integrations with external AI and Weather services." }
+    ]
+  },
+  "components": [
+    { "id": "mobile", "type": "frontend", "label": "Mobile App", "sublabel": "React Native (Expo)", "pos": [40, 300], "size": [130, 60], "tag": "Frontend" },
+    { "id": "auth", "type": "security", "label": "Auth Module", "sublabel": "JWT / NestJS", "pos": [260, 150], "size": [130, 60] },
+    { "id": "api", "type": "backend", "label": "Backend API", "sublabel": "NestJS", "pos": [260, 300], "size": [130, 60] },
+    { "id": "db", "type": "database", "label": "PostgreSQL", "sublabel": "TypeORM", "pos": [480, 300], "size": [130, 60] },
+    { "id": "ai_service", "type": "external", "label": "AI Service", "sublabel": "External LLM", "pos": [480, 150], "size": [130, 60] },
+    { "id": "weather_api", "type": "external", "label": "Weather API", "sublabel": "External Service", "pos": [260, 450], "size": [130, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Agro Platform", "wraps": ["api", "db", "auth"] }
+  ],
+  "connections": [
+    { "id": "app-to-api", "from": "mobile", "to": "api", "label": "REST API" },
+    { "id": "api-to-auth", "from": "api", "to": "auth", "label": "Validates", "variant": "security" },
+    { "id": "api-to-db", "from": "api", "to": "db", "label": "SQL", "labelDy": -20 },
+    { "id": "api-to-ai", "from": "api", "to": "ai_service", "label": "Audit/Gen", "variant": "dashed", "fromSide": "right", "toSide": "bottom" },
+    { "id": "api-to-weather", "from": "api", "to": "weather_api", "label": "Fetch", "variant": "dashed", "labelDy": 24 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Client", "items": ["React Native app running on iOS/Android via Expo."] },
+    { "dot": "emerald", "title": "Backend", "items": ["NestJS monolithic backend with TypeORM interacting with Postgres."] },
+    { "dot": "violet", "title": "Integrations", "items": ["AI modules for audits and interactions", "Weather module fetching from external API"] }
+  ]
+}

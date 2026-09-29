@@ -7,6 +7,9 @@ import { Herd } from './entities/herd.entity';
 import { Animal } from './entities/animal.entity';
 import { Weighing } from './entities/weighing.entity';
 import { LivestockEvent } from './entities/livestock-event.entity';
+import { IndicatorSnapshot } from './entities/indicator-snapshot.entity';
+import { BenchmarkSnapshot } from './entities/benchmark-snapshot.entity';
+import { AiInteraction } from './entities/ai-interaction.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -17,7 +20,19 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USER || 'agro_user',
   password: process.env.DB_PASSWORD || 'agro_pass',
   database: process.env.DB_NAME || 'agro_db',
-  entities: [User, Session, PasswordResetToken, Establishment, Herd, Animal, Weighing, LivestockEvent],
+  entities: [
+    User,
+    Session,
+    PasswordResetToken,
+    Establishment,
+    Herd,
+    Animal,
+    Weighing,
+    LivestockEvent,
+    IndicatorSnapshot,
+    BenchmarkSnapshot,
+    AiInteraction
+  ],
   migrations: ['src/db/migrations/*.ts'],
   synchronize: false,
 });
