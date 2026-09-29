@@ -78,3 +78,15 @@ Inicia el servidor de Expo:
 npx expo start -c
 ```
 *Escanea el código QR desde tu celular con la app de **Expo Go** (iOS/Android), o presiona `a` para abrirlo en un emulador de Android / `i` para el simulador de iOS.*
+
+### 4. Datos de Prueba (Seed)
+El proyecto incluye un script para poblar la base de datos con información realista (establecimientos, rodeos, animales, pesajes, eventos) para poder probar el dashboard, el mapa y la Inteligencia Artificial de inmediato.
+
+En la terminal del backend, ejecuta:
+```bash
+npm run seed
+```
+
+**Credenciales de prueba para iniciar sesión en la App:**
+- **Email:** `demo@agro.com`
+- **Contraseña:** `123456`
